@@ -8,8 +8,7 @@ data class Ticket(
     @BsonId val id: ObjectId = ObjectId(),
     val name: String,
     val timer: Long, //for timer in ticket
-    var isPassed: Boolean,
 
-    var questions: List<TicketQuestion>,
-    val achievement: Achieve
+    var questions: List<TicketQuestion>? = null,
+    val achievement: Achieve? = null
 )

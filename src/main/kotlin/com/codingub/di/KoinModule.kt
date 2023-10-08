@@ -1,6 +1,8 @@
 package com.codingub.di
 
 import com.codingub.data.HistoryDatabase
+import com.codingub.data.repositories.TicketDataRepository
+import com.codingub.data.repositories.TicketDataRepositoryImpl
 import com.codingub.data.repositories.UserDataRepository
 import com.codingub.data.repositories.UserDataRepositoryImpl
 import com.codingub.security.hashing.HashingService
@@ -16,6 +18,7 @@ val koinModule = module {
     single { provideTokenService() }
 
     single { provideUserDataRepository(get() as HistoryDatabase) }
+    single { provideTicketDataRepository(get() as HistoryDatabase) }
 
 }
 
@@ -37,3 +40,7 @@ internal fun provideDatabase() : HistoryDatabase = HistoryDatabase()
 internal fun provideUserDataRepository(
     database: HistoryDatabase
 ) : UserDataRepository = UserDataRepositoryImpl(database)
+
+internal fun provideTicketDataRepository(
+    database: HistoryDatabase
+) : TicketDataRepository = TicketDataRepositoryImpl(database)

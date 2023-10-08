@@ -20,5 +20,14 @@ fun Application.configureRouting(tokenConfig : TokenConfig) {
         signIn(tokenConfig)
         authenticate()
         getSecretInfo()
+
+        /*
+            Tickets
+         */
+
+        getAllTickets()
+        resetAllTickets()
+        deleteTicketByName()
+        insertOrUpdateTicket()
     }
 }
