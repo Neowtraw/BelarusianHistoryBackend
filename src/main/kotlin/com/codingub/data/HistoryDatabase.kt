@@ -1,10 +1,13 @@
 package com.codingub.data
 
+import com.codingub.data.models.tickets.PracticeQuestion
 import com.codingub.data.models.tickets.Ticket
 import com.codingub.data.models.tickets.TicketQuestion
 import com.codingub.data.models.users.User
+import com.codingub.data.requests.InsertPqRequest
 import com.codingub.data.requests.InsertTicketRequest
 import com.codingub.data.requests.InsertTqRequest
+import com.codingub.data.responses.PqResponse
 import com.codingub.data.responses.ServerResponse
 import com.codingub.data.responses.TicketResponse
 import com.codingub.data.responses.TqResponse
@@ -30,6 +33,7 @@ class HistoryDatabase {
     //tables of all data
     private val userCollection = database.getCollection<User>()
     private val ticketCollection = database.getCollection<Ticket>()
+    private val tqCollection = database.getCollection<TicketQuestion>()
 
     /*
         User
@@ -132,7 +136,7 @@ class HistoryDatabase {
         val tqList = ticketCollection.findOne(Ticket::id eq ticketId)?.questions
             ?: emptyList()
 
-        val tq = tqList.find { it.id == question.ticketId }
+        val tq = tqList.find { it.name == question.name }
 
         if (tq != null) {
             val updatedList = tqList.map {
@@ -198,4 +202,79 @@ class HistoryDatabase {
             status = HttpStatusCode.OK.value
         )
     }
+
+    /*
+       PracticeQuestion
+    */
+
+    suspend fun insertPractice(tqId: String, question: InsertPqRequest) : ServerResponse<Any>{
+        val pqList = tqCollection.findOne(TicketQuestion::id eq tqId)?.practices
+            ?: emptyList()
+
+        val pq = pqList.find { it.name == question.name}
+
+        if (pq != null) {
+            val updatedList = pqList.map {
+                if (it.name == question.name) {
+                    it.copy(
+                        info = question.info,
+                        taskType = question.taskType,
+                        answers = question.answers
+                    )
+                } else {
+                    it
+                }
+            }
+            ticketCollection.updateOne(TicketQuestion::id eq tqId, setValue(TicketQuestion::practices, updatedList))
+
+            return ServerResponse(
+                message = "Practice Question updated",
+                status = HttpStatusCode.OK.value
+            )
+        } else {
+            val insertedPq = PracticeQuestion(
+                name = question.name,
+                info = question.info,
+                taskType = question.taskType,
+                answers = question.answers
+            )
+            ticketCollection.updateOne(
+                TicketQuestion::id eq tqId,
+                push(TicketQuestion::practices, insertedPq),
+                UpdateOptions().upsert(true)
+            )
+
+            return ServerResponse(
+                message = "Practice Question inserted",
+                status = HttpStatusCode.OK.value
+            )
+        }
+    }
+
+    suspend fun deletePracticeById(tqId: String, questionId: String) : ServerResponse<Any>{
+        val pqList = tqCollection.findOne(TicketQuestion::id eq tqId)?.practices ?: emptyList()
+        val pq = pqList.find { it.id == questionId }
+
+        if(pq != null){
+            ticketCollection.updateOne(Ticket::id eq tqId, pull(TicketQuestion::practices, pq))
+            return ServerResponse(
+                message = "Ticket deleted successfully",
+                status = HttpStatusCode.OK.value
+            )
+        }
+        return ServerResponse(
+            message = "No ticket to delete",
+            status = HttpStatusCode.Conflict.value
+        )
+    }
+
+    suspend fun getAllPracticeFromTq(tqId: String) : ServerResponse<PqResponse> {
+        return ServerResponse(
+           data = PqResponse(
+                tqCollection.findOne(TicketQuestion::id eq tqId)?.practices ?: emptyList()
+           ),
+            status = HttpStatusCode.OK.value
+        )
+    }
+
 }

@@ -1,11 +1,9 @@
 package com.codingub.data.repositories
 
 import com.codingub.data.HistoryDatabase
-import com.codingub.data.models.tickets.TicketQuestion
 import com.codingub.data.requests.InsertTqRequest
 import com.codingub.data.responses.ServerResponse
 import com.codingub.data.responses.TqResponse
-import org.bson.types.ObjectId
 
 interface TqDataRepository {
     /*

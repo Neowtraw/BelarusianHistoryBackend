@@ -21,5 +21,9 @@ object Constants {
         const val ROUTE_RESET_TQ = "resettq"
         const val ROUTE_TQ = "gettq"
 
+        const val ROUTE_INSERT_PQ = "insertpq"
+        const val ROUTE_RESET_PQ = "resetpq"
+        const val ROUTE_PQ = "getpq"
+
     }
 }

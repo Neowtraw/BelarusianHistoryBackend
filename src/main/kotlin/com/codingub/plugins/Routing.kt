@@ -35,5 +35,12 @@ fun Application.configureRouting(tokenConfig : TokenConfig) {
         getAllTq()
         deleteTqById()
         insertTq()
+
+        /*
+            PracticeQuestion
+         */
+        getAllPractice()
+        deletePracticeById()
+        insertPractice()
     }
 }
