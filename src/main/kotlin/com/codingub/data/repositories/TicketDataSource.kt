@@ -1,23 +1,21 @@
 package com.codingub.data.repositories
 
 import com.codingub.data.HistoryDatabase
-import com.codingub.data.models.tickets.Ticket
 import com.codingub.data.requests.InsertTicketRequest
 import com.codingub.data.responses.ServerResponse
-import org.bson.types.ObjectId
+import com.codingub.data.responses.TicketResponse
 
 interface TicketDataRepository {
 
  /*
    Only Administrator
   */
-    suspend fun resetAllTickets() : ServerResponse<Any>
     suspend fun deleteTicketByName(name: String)  : ServerResponse<Any>
-    suspend fun insertOrUpdateTicket(request: InsertTicketRequest)  : ServerResponse<ObjectId>
+    suspend fun insertOrUpdateTicket(request: InsertTicketRequest)  : ServerResponse<String>
  /*
    User
   */
-    suspend fun getAllTickets() : ServerResponse<List<Ticket>>
+    suspend fun getAllTickets() : ServerResponse<TicketResponse>
 
  // suspend fun updateTicketPassedFromUser()
 }
@@ -26,19 +24,16 @@ interface TicketDataRepository {
 class TicketDataRepositoryImpl constructor(
     private val database: HistoryDatabase
 ) : TicketDataRepository{
-    override suspend fun resetAllTickets() : ServerResponse<Any>{
-        return database.resetAllTickets()
-    }
 
     override suspend fun deleteTicketByName(name: String) : ServerResponse<Any> {
         return database.deleteTicketByName(name)
     }
 
-    override suspend fun insertOrUpdateTicket(request: InsertTicketRequest) : ServerResponse<ObjectId> {
+    override suspend fun insertOrUpdateTicket(request: InsertTicketRequest) : ServerResponse<String> {
         return database.insertOrUpdateTicket(request)
     }
 
-    override suspend fun getAllTickets() : ServerResponse<List<Ticket>>{
+    override suspend fun getAllTickets() : ServerResponse<TicketResponse>{
        return database.getAllTickets()
     }
 }

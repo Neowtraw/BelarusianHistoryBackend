@@ -4,8 +4,8 @@ import org.bson.codecs.pojo.annotations.BsonId
 import org.bson.types.ObjectId
 
 data class Group(
-    @BsonId val id: ObjectId = ObjectId(),
+    @BsonId val id: String = ObjectId().toString(),
     val name: String,
     val teacherId: User,
-    val students: List<User>
+    val students: List<User> = emptyList()
 )

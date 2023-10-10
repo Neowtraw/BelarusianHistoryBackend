@@ -5,17 +5,17 @@ import org.bson.codecs.pojo.annotations.BsonId
 import org.bson.types.ObjectId
 
 data class CustomTicketQuestion(
-    @BsonId val id: Int,
+    @BsonId val id : String = ObjectId().toString(),
     val name: String,
     val info: String,
 
-    var practices: List<CustomPracticeQuestion>? = null
+    var practices: List<CustomPracticeQuestion> = emptyList()
 )
 
 data class CustomPracticeQuestion(
     val name : String,
     val taskType: Int, //TaskType
-    val answers: List<Answer>
+    val answers: List<Answer> = emptyList()
 )
 
 

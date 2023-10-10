@@ -4,7 +4,7 @@ import org.bson.codecs.pojo.annotations.BsonId
 import org.bson.types.ObjectId
 
 data class Note(
-    @BsonId val id: Int,
+    @BsonId val id : String = ObjectId().toString(),
     val info: String,
     val ticketId: ObjectId
 )

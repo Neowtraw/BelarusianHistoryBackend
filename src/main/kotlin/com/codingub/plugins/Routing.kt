@@ -26,8 +26,14 @@ fun Application.configureRouting(tokenConfig : TokenConfig) {
          */
 
         getAllTickets()
-        resetAllTickets()
         deleteTicketByName()
         insertOrUpdateTicket()
+
+        /*
+            TicketQuestion
+         */
+        getAllTq()
+        deleteTqById()
+        insertTq()
     }
 }

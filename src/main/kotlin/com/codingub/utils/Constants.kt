@@ -13,10 +13,13 @@ object Constants {
         const val ROUTE_AUTHENTICATE = "authenticate"
         const val ROUTE_SECRET = "secret"
 
-        const val ROUTE_RESET_ALL_TICKETS = "resetalltickets"
         const val ROUTE_RESET_TICKET = "resetticket"
         const val ROUTE_INSERT_TICKET = "insertticket"
         const val ROUTE_TICKETS = "getalltickets"
+
+        const val ROUTE_INSERT_TQ = "inserttq"
+        const val ROUTE_RESET_TQ = "resettq"
+        const val ROUTE_TQ = "gettq"
 
     }
 }

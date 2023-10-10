@@ -13,14 +13,6 @@ import org.koin.java.KoinJavaComponent.inject
 
 private val ticketDataSource: TicketDataRepository by inject(TicketDataRepository::class.java)
 
-fun Route.resetAllTickets() {
-    post(Constants.EndPoints.ROUTE_RESET_ALL_TICKETS) {
-        //test
-        call.respond(ticketDataSource.resetAllTickets())
-        return@post
-    }
-}
-
 fun Route.insertOrUpdateTicket() {
     post(Constants.EndPoints.ROUTE_INSERT_TICKET) {
         val request = kotlin.runCatching { call.receiveNullable<InsertTicketRequest>() }.getOrNull() ?: kotlin.run {
@@ -49,5 +41,6 @@ fun Route.getAllTickets() {
         call.respond(
             ticketDataSource.getAllTickets()
         )
+        return@get
     }
 }
