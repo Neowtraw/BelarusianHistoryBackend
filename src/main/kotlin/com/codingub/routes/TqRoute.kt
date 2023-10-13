@@ -5,6 +5,9 @@ import com.codingub.data.requests.InsertTqRequest
 import com.codingub.data.requests.DeleteTqRequest
 import com.codingub.data.requests.GetTqRequest
 import com.codingub.utils.Constants
+import com.codingub.utils.Constants.EndPoints.ROUTE_INSERT_TQ
+import com.codingub.utils.Constants.EndPoints.ROUTE_RESET_TQ
+import com.codingub.utils.Constants.EndPoints.ROUTE_TQ
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -15,7 +18,7 @@ import org.koin.java.KoinJavaComponent
 private val tqDataSource: TqDataRepository by KoinJavaComponent.inject(TqDataRepository::class.java)
 
 fun Route.insertTq() {
-    post(Constants.EndPoints.ROUTE_INSERT_TQ) {
+    post(ROUTE_INSERT_TQ) {
         val request = kotlin.runCatching { call.receiveNullable<InsertTqRequest>() }.getOrNull() ?: kotlin.run {
             call.respond(HttpStatusCode.BadRequest)
             return@post
@@ -27,7 +30,7 @@ fun Route.insertTq() {
 }
 
 fun Route.deleteTqById() {
-    post(Constants.EndPoints.ROUTE_RESET_TQ) {
+    post(ROUTE_RESET_TQ) {
         val request = kotlin.runCatching { call.receiveNullable<DeleteTqRequest>() }.getOrNull() ?: kotlin.run {
             call.respond(HttpStatusCode.BadRequest)
             return@post
@@ -37,7 +40,7 @@ fun Route.deleteTqById() {
 }
 
 fun Route.getAllTq() {
-    get(Constants.EndPoints.ROUTE_TQ) {
+    get(ROUTE_TQ) {
         val request = kotlin.runCatching { call.receiveNullable<GetTqRequest>() }.getOrNull() ?: kotlin.run {
             call.respond(HttpStatusCode.BadRequest)
             return@get

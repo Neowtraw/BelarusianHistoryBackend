@@ -8,22 +8,24 @@ object Constants {
     const val USER_ID = "userId"
     object EndPoints{
 
-        const val ROUTE_SIGNUP = "signup"
-        const val ROUTE_SIGNIN = "signin"
-        const val ROUTE_AUTHENTICATE = "authenticate"
-        const val ROUTE_SECRET = "secret"
+        const val ROUTE_USER = "users"
+        const val ROUTE_SIGNUP = "users/signup"
+        const val ROUTE_SIGNIN = "users/signin"
+        const val ROUTE_AUTHENTICATE = "users/authenticate"
+        const val ROUTE_SECRET = "users/secret"
 
-        const val ROUTE_RESET_TICKET = "resetticket"
-        const val ROUTE_INSERT_TICKET = "insertticket"
-        const val ROUTE_TICKETS = "getalltickets"
+        const val ROUTE_TICKET = "tickets"
+        const val ROUTE_INSERT_TICKET = "tickets/insert"
+        const val ROUTE_RESET_TICKET = "tickets/reset"
 
-        const val ROUTE_INSERT_TQ = "inserttq"
-        const val ROUTE_RESET_TQ = "resettq"
-        const val ROUTE_TQ = "gettq"
+        const val ROUTE_TQ = "tq"
+        const val ROUTE_INSERT_TQ = "tq/insert"
+        const val ROUTE_RESET_TQ = "tq/reset"
 
-        const val ROUTE_INSERT_PQ = "insertpq"
-        const val ROUTE_RESET_PQ = "resetpq"
-        const val ROUTE_PQ = "getpq"
+        const val ROUTE_PQ = "pq"
+        const val ROUTE_INSERT_PQ = "pq/insert"
+        const val ROUTE_RESET_PQ = "pq/reset"
 
+        const val ROUTE_ACHIEVE = "achieves"
     }
 }

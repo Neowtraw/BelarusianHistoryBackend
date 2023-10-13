@@ -4,8 +4,15 @@ import com.codingub.data.HistoryDatabase
 import com.codingub.data.models.users.User
 
 interface UserDataRepository {
+    /*
+        Authentication
+     */
     suspend fun getUserByLogin(login: String): User?
     suspend fun insertUser(user: User): Boolean
+
+    /*
+        User
+     */
 }
 
 class UserDataRepositoryImpl constructor(

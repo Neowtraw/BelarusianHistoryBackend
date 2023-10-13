@@ -10,6 +10,10 @@ import com.codingub.security.token.TokenClaim
 import com.codingub.security.token.TokenConfig
 import com.codingub.security.token.TokenService
 import com.codingub.utils.Constants
+import com.codingub.utils.Constants.EndPoints.ROUTE_AUTHENTICATE
+import com.codingub.utils.Constants.EndPoints.ROUTE_SECRET
+import com.codingub.utils.Constants.EndPoints.ROUTE_SIGNIN
+import com.codingub.utils.Constants.EndPoints.ROUTE_SIGNUP
 import com.codingub.utils.generateUserUid
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -26,7 +30,7 @@ private val userDataSource: UserDataRepository by inject(UserDataRepository::cla
 private val tokenService: TokenService by inject(TokenService::class.java)
 private val hashingService: HashingService by inject(HashingService::class.java)
 fun Route.signUp() {
-    post(Constants.EndPoints.ROUTE_SIGNUP) {
+    post(ROUTE_SIGNUP) {
         val request = kotlin.runCatching { call.receiveNullable<AuthRequest>() }.getOrNull() ?: kotlin.run {
             call.respond(HttpStatusCode.BadRequest)
             return@post
@@ -52,7 +56,7 @@ fun Route.signUp() {
 fun Route.signIn(
     tokenConfig: TokenConfig,
 ) {
-    post(Constants.EndPoints.ROUTE_SIGNIN) {
+    post(ROUTE_SIGNIN) {
         val request = kotlin.runCatching { call.receiveNullable<AuthRequest>() }.getOrNull() ?: kotlin.run {
             call.respond(HttpStatusCode.BadRequest)
             return@post
@@ -96,7 +100,7 @@ fun Route.signIn(
 
 fun Route.authenticate() {
     authenticate {
-        get(Constants.EndPoints.ROUTE_AUTHENTICATE) {
+        get(ROUTE_AUTHENTICATE) {
             call.respond(HttpStatusCode.OK)
         }
     }
@@ -104,7 +108,7 @@ fun Route.authenticate() {
 
 fun Route.getSecretInfo() {
     authenticate {
-        get(Constants.EndPoints.ROUTE_SECRET) {
+        get(ROUTE_SECRET) {
             val principal = call.principal<JWTPrincipal>()
             val userId = principal?.getClaim(Constants.USER_ID, String::class)
             call.respond(HttpStatusCode.OK, "Your userId is $userId")

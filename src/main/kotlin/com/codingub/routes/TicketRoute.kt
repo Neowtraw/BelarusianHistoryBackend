@@ -3,7 +3,9 @@ package com.codingub.routes
 import com.codingub.data.repositories.TicketDataRepository
 import com.codingub.data.requests.InsertTicketRequest
 import com.codingub.data.requests.TicketNameRequest
-import com.codingub.utils.Constants
+import com.codingub.utils.Constants.EndPoints.ROUTE_INSERT_TICKET
+import com.codingub.utils.Constants.EndPoints.ROUTE_RESET_TICKET
+import com.codingub.utils.Constants.EndPoints.ROUTE_TICKET
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -14,7 +16,7 @@ import org.koin.java.KoinJavaComponent.inject
 private val ticketDataSource: TicketDataRepository by inject(TicketDataRepository::class.java)
 
 fun Route.insertOrUpdateTicket() {
-    post(Constants.EndPoints.ROUTE_INSERT_TICKET) {
+    post(ROUTE_INSERT_TICKET) {
         val request = kotlin.runCatching { call.receiveNullable<InsertTicketRequest>() }.getOrNull() ?: kotlin.run {
             call.respond(HttpStatusCode.BadRequest)
             return@post
@@ -27,7 +29,7 @@ fun Route.insertOrUpdateTicket() {
 }
 
 fun Route.deleteTicketByName() {
-    post(Constants.EndPoints.ROUTE_RESET_TICKET) {
+    post(ROUTE_RESET_TICKET) {
         val request = kotlin.runCatching { call.receiveNullable<TicketNameRequest>() }.getOrNull() ?: kotlin.run {
             call.respond(HttpStatusCode.BadRequest)
             return@post
@@ -37,7 +39,7 @@ fun Route.deleteTicketByName() {
 }
 
 fun Route.getAllTickets() {
-    get(Constants.EndPoints.ROUTE_TICKETS) {
+    get(ROUTE_TICKET) {
         call.respond(
             ticketDataSource.getAllTickets()
         )

@@ -6,5 +6,5 @@ import org.bson.types.ObjectId
 data class Note(
     @BsonId val id : String = ObjectId().toString(),
     val info: String,
-    val ticketId: ObjectId
+    val ticketId: String
 )

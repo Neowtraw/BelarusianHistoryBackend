@@ -1,5 +1,6 @@
 package com.codingub.data
 
+import com.codingub.data.models.achieves.Achieve
 import com.codingub.data.models.tickets.PracticeQuestion
 import com.codingub.data.models.tickets.Ticket
 import com.codingub.data.models.tickets.TicketQuestion
@@ -7,10 +8,7 @@ import com.codingub.data.models.users.User
 import com.codingub.data.requests.InsertPqRequest
 import com.codingub.data.requests.InsertTicketRequest
 import com.codingub.data.requests.InsertTqRequest
-import com.codingub.data.responses.PqResponse
-import com.codingub.data.responses.ServerResponse
-import com.codingub.data.responses.TicketResponse
-import com.codingub.data.responses.TqResponse
+import com.codingub.data.responses.*
 import com.codingub.utils.Constants
 import com.codingub.utils.HistoryLogger
 import com.mongodb.client.model.Filters.eq
@@ -34,6 +32,7 @@ class HistoryDatabase {
     private val userCollection = database.getCollection<User>()
     private val ticketCollection = database.getCollection<Ticket>()
     private val tqCollection = database.getCollection<TicketQuestion>()
+    private val achieveCollection = database.getCollection<Achieve>()
 
     /*
         User
@@ -276,5 +275,19 @@ class HistoryDatabase {
             status = HttpStatusCode.OK.value
         )
     }
+
+    /*
+        Achieve
+     */
+
+    suspend fun getAllAchieves() : ServerResponse<AchieveResponse>{
+        return ServerResponse(
+            data = AchieveResponse(
+                achieveCollection.find().toList()
+            ),
+            status = HttpStatusCode.OK.value
+        )
+    }
+
 
 }

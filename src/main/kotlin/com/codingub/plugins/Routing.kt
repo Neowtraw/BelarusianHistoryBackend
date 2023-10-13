@@ -42,5 +42,10 @@ fun Application.configureRouting(tokenConfig : TokenConfig) {
         getAllPractice()
         deletePracticeById()
         insertPractice()
+
+        /*
+            Achieve
+         */
+        getAllAchieves()
     }
 }

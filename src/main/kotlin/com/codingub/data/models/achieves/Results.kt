@@ -5,5 +5,6 @@ import org.bson.types.ObjectId
 
 data class Results(
     @BsonId val id : String = ObjectId().toString(),
-    val tickets: HashMap<Int, Int> //tickets passed
+    val type : Int, //type of result -> 1- Ticket 2- Practice
+    val typeId: String //id of object (Ticket/Practice)
 )

@@ -17,6 +17,7 @@ val koinModule = module {
     single { provideTicketDataRepository(get() as HistoryDatabase) }
     single { provideTqDataRepository(get() as HistoryDatabase) }
     single { providePqDataRepository(get() as HistoryDatabase) }
+    single { provideAchieveDataRepository(get() as HistoryDatabase) }
 
 }
 
@@ -47,3 +48,6 @@ internal fun provideTicketDataRepository(
 internal fun provideTqDataRepository(
     database: HistoryDatabase
 ) : TqDataRepository = TqDataRepositoryImpl(database)
+internal fun provideAchieveDataRepository(
+    database: HistoryDatabase
+) : AchieveDataRepository = AchieveDataRepositoryImpl(database)
