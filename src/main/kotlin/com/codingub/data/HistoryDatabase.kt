@@ -11,9 +11,7 @@ import com.codingub.data.requests.InsertTqRequest
 import com.codingub.data.responses.*
 import com.codingub.utils.Constants
 import com.codingub.utils.HistoryLogger
-import com.mongodb.client.model.Filters.eq
 import com.mongodb.client.model.UpdateOptions
-import io.ktor.http.*
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.eq
 import org.litote.kmongo.pull
@@ -53,48 +51,42 @@ class HistoryDatabase {
         return userCollection.insertOne(user).wasAcknowledged()
     }
 
+    suspend fun changeRoleByLogin(login: String, accessLevel: Int): Boolean {
+        val user = userCollection.findOne(User::login eq login)
+        return if (user != null) {
+            val updatedUser = user.copy(
+                accessLevel = accessLevel
+            )
+            userCollection.updateOne(
+                User::login eq login,
+                updatedUser
+            ).wasAcknowledged()
+        } else {
+            false
+        }
+    }
+
     /*
         Ticket
      */
 
-//    suspend fun resetAllTickets(): ServerResponse<Any> {
-//        if (ticketCollection.find().toList().isEmpty()) {
-//            return ServerResponse(
-//                message = "Tickets are already empty",
-//                status = HttpStatusCode.Conflict.value
-//            )
-//        }
-//        ticketCollection.deleteMany(Document())
-//        return ServerResponse(
-//            status = HttpStatusCode.OK.value
-//        )
-//    }
-
-    suspend fun deleteTicketByName(name: String): ServerResponse<Any> {
-        return if (ticketCollection.findOne(Ticket::name eq name) != null) {
-            ticketCollection.deleteOne(eq("name", name))
-            ServerResponse(
-                message = "Ticket deleted successfully",
-                status = HttpStatusCode.OK.value
-            )
+    suspend fun deleteTicketByName(name: String): Boolean {
+        val ticket = ticketCollection.findOne(Ticket::name eq name)
+        return if (ticket != null) {
+            ticketCollection.deleteOne(Ticket::name eq name).wasAcknowledged()
         } else {
-            ServerResponse(
-                message = "Ticket is not found",
-                status = HttpStatusCode.Conflict.value
-            )
+            HistoryLogger.info("Ticket not found")
+            false
         }
     }
 
-    suspend fun getAllTickets(): ServerResponse<TicketResponse> {
-        return ServerResponse(
-            data = TicketResponse(
-                ticketList = ticketCollection.find().toList()
-            ),
-            status = HttpStatusCode.OK.value
+    suspend fun getAllTickets(): TicketResponse {
+        return TicketResponse(
+            ticketList = ticketCollection.find().toList()
         )
     }
 
-    suspend fun insertOrUpdateTicket(request: InsertTicketRequest): ServerResponse<String> {
+    suspend fun insertOrUpdateTicket(request: InsertTicketRequest): Boolean {
         val ticket = ticketCollection.findOne(Ticket::name eq request.name)
 
         if (ticket != null) {
@@ -104,37 +96,28 @@ class HistoryDatabase {
                 achievement = request.achieve
             )
             if (ticket != updatedTicket)
-                ticketCollection.updateOne(
+                return ticketCollection.updateOne(
                     Ticket::id eq ticket.id,
                     updatedTicket
-                )
-            return ServerResponse(
-                data = updatedTicket.id,
-                message = "Ticket updated",
-                status = HttpStatusCode.OK.value
-            )
+                ).wasAcknowledged()
         } else {
             val insertedTicket = Ticket(
                 name = request.name,
                 timer = request.timer,
                 achievement = request.achieve
             )
-            ticketCollection.insertOne(insertedTicket)
-            return ServerResponse(
-                data = insertedTicket.id,
-                message = "Ticket inserted",
-                status = HttpStatusCode.OK.value
-            )
+            return ticketCollection.insertOne(insertedTicket).wasAcknowledged()
         }
+        HistoryLogger.info("Ticket not found")
+        return false
     }
 
     /*
         TicketQuestion
      */
-    suspend fun insertOrUpdateTq(ticketId: String, question: InsertTqRequest): ServerResponse<Any> {
+    suspend fun insertOrUpdateTq(ticketId: String, question: InsertTqRequest): Boolean {
         val tqList = ticketCollection.findOne(Ticket::id eq ticketId)?.questions
             ?: emptyList()
-
         val tq = tqList.find { it.name == question.name }
 
         if (tq != null) {
@@ -149,56 +132,40 @@ class HistoryDatabase {
                     it
                 }
             }
-            ticketCollection.updateOne(Ticket::id eq ticketId, setValue(Ticket::questions, updatedList))
+            return ticketCollection.updateOne(Ticket::id eq ticketId, setValue(Ticket::questions, updatedList))
+                .wasAcknowledged()
 
-            return ServerResponse(
-                message = "Ticket Question updated",
-                status = HttpStatusCode.OK.value
-            )
         } else {
             val insertedTq = TicketQuestion(
                 name = question.name,
                 info = question.info,
                 achieve = question.achieve
             )
-            ticketCollection.updateOne(
+
+            return ticketCollection.updateOne(
                 Ticket::id eq ticketId,
                 push(Ticket::questions, insertedTq),
                 UpdateOptions().upsert(true)
-            )
-
-            return ServerResponse(
-                message = "Ticket Question inserted",
-                status = HttpStatusCode.OK.value
-            )
+            ).wasAcknowledged()
         }
     }
 
-    suspend fun deleteTqById(ticketId: String, questionId: String): ServerResponse<Any> {
+    suspend fun deleteTqById(ticketId: String, questionId: String): Boolean {
         val tqList = ticketCollection.findOne(Ticket::id eq ticketId)?.questions ?: emptyList()
         val tq = tqList.find { it.id == questionId }
 
-        if(tq != null){
-            ticketCollection.updateOne(Ticket::id eq ticketId, pull(Ticket::questions, tq))
-            return ServerResponse(
-                message = "Ticket deleted successfully",
-                status = HttpStatusCode.OK.value
-            )
+        if (tq != null) {
+            return ticketCollection.updateOne(Ticket::id eq ticketId, pull(Ticket::questions, tq))
+                .wasAcknowledged()
         }
-        return ServerResponse(
-            message = "No ticket to delete",
-            status = HttpStatusCode.Conflict.value
-        )
+        HistoryLogger.info("No tq to delete")
+        return false
     }
 
-    suspend fun getAllTq(ticketId: String): ServerResponse<TqResponse> {
-
-        return ServerResponse(
-            data = TqResponse(
-                ticketCollection.findOne(Ticket::id eq ticketId)?.questions
-                    ?: emptyList()
-            ),
-            status = HttpStatusCode.OK.value
+    suspend fun getAllTq(ticketId: String): TqResponse {
+        return TqResponse(
+            ticketCollection.findOne(Ticket::id eq ticketId)?.questions
+                ?: emptyList()
         )
     }
 
@@ -206,11 +173,10 @@ class HistoryDatabase {
        PracticeQuestion
     */
 
-    suspend fun insertPractice(tqId: String, question: InsertPqRequest) : ServerResponse<Any>{
+    suspend fun insertPractice(tqId: String, question: InsertPqRequest): Boolean {
         val pqList = tqCollection.findOne(TicketQuestion::id eq tqId)?.practices
             ?: emptyList()
-
-        val pq = pqList.find { it.name == question.name}
+        val pq = pqList.find { it.name == question.name }
 
         if (pq != null) {
             val updatedList = pqList.map {
@@ -224,12 +190,11 @@ class HistoryDatabase {
                     it
                 }
             }
-            ticketCollection.updateOne(TicketQuestion::id eq tqId, setValue(TicketQuestion::practices, updatedList))
-
-            return ServerResponse(
-                message = "Practice Question updated",
-                status = HttpStatusCode.OK.value
+            return ticketCollection.updateOne(
+                TicketQuestion::id eq tqId,
+                setValue(TicketQuestion::practices, updatedList)
             )
+                .wasAcknowledged()
         } else {
             val insertedPq = PracticeQuestion(
                 name = question.name,
@@ -237,55 +202,40 @@ class HistoryDatabase {
                 taskType = question.taskType,
                 answers = question.answers
             )
-            ticketCollection.updateOne(
+            return ticketCollection.updateOne(
                 TicketQuestion::id eq tqId,
                 push(TicketQuestion::practices, insertedPq),
                 UpdateOptions().upsert(true)
-            )
-
-            return ServerResponse(
-                message = "Practice Question inserted",
-                status = HttpStatusCode.OK.value
-            )
+            ).wasAcknowledged()
         }
     }
 
-    suspend fun deletePracticeById(tqId: String, questionId: String) : ServerResponse<Any>{
+    suspend fun deletePracticeById(tqId: String, questionId: String): Boolean {
         val pqList = tqCollection.findOne(TicketQuestion::id eq tqId)?.practices ?: emptyList()
         val pq = pqList.find { it.id == questionId }
 
-        if(pq != null){
-            ticketCollection.updateOne(Ticket::id eq tqId, pull(TicketQuestion::practices, pq))
-            return ServerResponse(
-                message = "Ticket deleted successfully",
-                status = HttpStatusCode.OK.value
-            )
+        if (pq != null) {
+            return ticketCollection.updateOne(Ticket::id eq tqId, pull(TicketQuestion::practices, pq))
+                .wasAcknowledged()
         }
-        return ServerResponse(
-            message = "No ticket to delete",
-            status = HttpStatusCode.Conflict.value
-        )
+        HistoryLogger.info("No pq to delete")
+        return false
     }
 
-    suspend fun getAllPracticeFromTq(tqId: String) : ServerResponse<PqResponse> {
-        return ServerResponse(
-           data = PqResponse(
-                tqCollection.findOne(TicketQuestion::id eq tqId)?.practices ?: emptyList()
-           ),
-            status = HttpStatusCode.OK.value
+    suspend fun getAllPracticeFromTq(tqId: String): PqResponse {
+        return PqResponse(
+            tqCollection.findOne(TicketQuestion::id eq tqId)?.practices ?: emptyList()
         )
+
     }
 
     /*
         Achieve
      */
 
-    suspend fun getAllAchieves() : ServerResponse<AchieveResponse>{
-        return ServerResponse(
-            data = AchieveResponse(
-                achieveCollection.find().toList()
-            ),
-            status = HttpStatusCode.OK.value
+    suspend fun getAllAchieves(): AchieveResponse {
+        return AchieveResponse(
+            achieveCollection.find().toList()
         )
     }
 

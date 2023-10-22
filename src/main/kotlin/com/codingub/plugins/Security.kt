@@ -8,7 +8,6 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 
 fun Application.configureSecurity(config: TokenConfig) {
-
     authentication {
         jwt {
             realm = this@configureSecurity.environment.config.property("jwt.realm").getString()
@@ -16,11 +15,13 @@ fun Application.configureSecurity(config: TokenConfig) {
                 JWT
                     .require(Algorithm.HMAC256(config.secret))
                     .withAudience(config.audience)
-                    .withIssuer(config.secret)
+                    .withIssuer(config.issuer)
                     .build()
             )
             validate { credential ->
-                if (credential.payload.audience.contains(config.audience)) JWTPrincipal(credential.payload) else null
+                if (credential.payload.audience.contains(config.audience)) {
+                    JWTPrincipal(credential.payload)
+                } else null
             }
         }
     }

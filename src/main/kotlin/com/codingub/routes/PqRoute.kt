@@ -4,7 +4,6 @@ import com.codingub.data.repositories.PqDataRepository
 import com.codingub.data.requests.DeletePqRequest
 import com.codingub.data.requests.GetPqRequest
 import com.codingub.data.requests.InsertPqRequest
-import com.codingub.utils.Constants
 import com.codingub.utils.Constants.EndPoints.ROUTE_INSERT_PQ
 import com.codingub.utils.Constants.EndPoints.ROUTE_PQ
 import com.codingub.utils.Constants.EndPoints.ROUTE_RESET_PQ
@@ -24,8 +23,13 @@ fun Route.insertPractice(){
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
-        val pqId = pqDataSource.insertPractice(tqId = request.tqId, question = request)
-        call.respond(pqId)
+        val wasAcknowledged = pqDataSource.insertPractice(tqId = request.tqId, question = request)
+        if(!wasAcknowledged) {
+            call.respond(HttpStatusCode.Conflict, "Practice not found")
+            return@post
+        }
+
+        call.respond(HttpStatusCode.OK, "Practice inserted successfully")
         return@post
     }
 }
@@ -36,7 +40,15 @@ fun Route.deletePracticeById(){
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
-        call.respond(pqDataSource.deletePracticeById(request.tqId, request.questionId))
+        val wasAcknowledged =pqDataSource.deletePracticeById(request.tqId, request.questionId)
+
+        if(!wasAcknowledged){
+            call.respond(HttpStatusCode.Conflict, "Practice not found")
+            return@post
+
+        }
+        call.respond(HttpStatusCode.OK, "Practice deleted successfully")
+        return@post
     }
 }
 

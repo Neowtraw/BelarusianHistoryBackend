@@ -13,6 +13,8 @@ interface UserDataRepository {
     /*
         User
      */
+
+    suspend fun changeRoleByLogin(login: String, accessLevel: Int) : Boolean
 }
 
 class UserDataRepositoryImpl constructor(
@@ -24,6 +26,10 @@ class UserDataRepositoryImpl constructor(
 
     override suspend fun insertUser(user: User): Boolean {
         return database.insertUser(user)
+    }
+
+    override suspend fun changeRoleByLogin(login: String, accessLevel: Int): Boolean {
+        return database.changeRoleByLogin(login, accessLevel)
     }
 }
 

@@ -8,6 +8,6 @@ data class InsertTicketRequest(
     val achieve: Achieve? = null
 )
 
-data class TicketNameRequest(
+data class DeleteTicketRequest(
     val name: String
 )

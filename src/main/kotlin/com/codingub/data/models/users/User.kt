@@ -9,7 +9,7 @@ data class User(
     val login: String,
     val password: String,
     val username: String,
-    val UId: String, //for groups
+    val UId: String = "", //for groups
     val accessLevel: Int, //permissions
     val photo: String = "",
 

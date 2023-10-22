@@ -9,7 +9,9 @@ import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.routing.*
 
-fun Application.configureRouting(tokenConfig : TokenConfig) {
+fun Application.configureRouting(
+    tokenConfig : TokenConfig
+) {
     routing {
 
         /*
@@ -20,6 +22,11 @@ fun Application.configureRouting(tokenConfig : TokenConfig) {
         signIn(tokenConfig)
         authenticate()
         getSecretInfo()
+
+        /*
+            Users
+         */
+        changeRoleByLogin()
 
         /*
             Tickets

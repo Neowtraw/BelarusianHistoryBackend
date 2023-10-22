@@ -1,8 +1,8 @@
 package com.codingub.routes
 
 import com.codingub.data.repositories.TicketDataRepository
+import com.codingub.data.requests.DeleteTicketRequest
 import com.codingub.data.requests.InsertTicketRequest
-import com.codingub.data.requests.TicketNameRequest
 import com.codingub.utils.Constants.EndPoints.ROUTE_INSERT_TICKET
 import com.codingub.utils.Constants.EndPoints.ROUTE_RESET_TICKET
 import com.codingub.utils.Constants.EndPoints.ROUTE_TICKET
@@ -21,20 +21,37 @@ fun Route.insertOrUpdateTicket() {
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
-        val ticketId = ticketDataSource.insertOrUpdateTicket(request)
 
-        call.respond(ticketId)
+        val wasAcknowledged = ticketDataSource.insertOrUpdateTicket(request)
+        if (!wasAcknowledged) {
+            call.respond(
+                HttpStatusCode.Conflict,
+                "Ticket not found"
+            )
+            return@post
+        }
+        call.respond(HttpStatusCode.OK, "Ticket inserted successfully")
         return@post
     }
 }
 
 fun Route.deleteTicketByName() {
     post(ROUTE_RESET_TICKET) {
-        val request = kotlin.runCatching { call.receiveNullable<TicketNameRequest>() }.getOrNull() ?: kotlin.run {
+        val request = kotlin.runCatching { call.receiveNullable<DeleteTicketRequest>() }.getOrNull() ?: kotlin.run {
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
-        call.respond(ticketDataSource.deleteTicketByName(request.name))
+        val wasAcknowledged = ticketDataSource.deleteTicketByName(request)
+        if (!wasAcknowledged) {
+            call.respond(
+                HttpStatusCode.Conflict,
+                "Ticket not found"
+            )
+            return@post
+        }
+
+        call.respond(HttpStatusCode.OK, "Ticket deleted successfully")
+        return@post
     }
 }
 
@@ -43,6 +60,5 @@ fun Route.getAllTickets() {
         call.respond(
             ticketDataSource.getAllTickets()
         )
-        return@get
     }
 }

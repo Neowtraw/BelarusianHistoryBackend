@@ -4,7 +4,6 @@ import com.codingub.data.repositories.TqDataRepository
 import com.codingub.data.requests.InsertTqRequest
 import com.codingub.data.requests.DeleteTqRequest
 import com.codingub.data.requests.GetTqRequest
-import com.codingub.utils.Constants
 import com.codingub.utils.Constants.EndPoints.ROUTE_INSERT_TQ
 import com.codingub.utils.Constants.EndPoints.ROUTE_RESET_TQ
 import com.codingub.utils.Constants.EndPoints.ROUTE_TQ
@@ -23,8 +22,11 @@ fun Route.insertTq() {
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
-        val tqId = tqDataSource.insertTq(ticketId = request.ticketId, question = request)
-        call.respond(tqId)
+        val wasAcknowledged = tqDataSource.insertTq(ticketId = request.ticketId, question = request)
+        if(!wasAcknowledged){
+            call.respond(HttpStatusCode.Conflict, "tq not found")
+        }
+        call.respond(HttpStatusCode.OK, "tq inserted successfully")
         return@post
     }
 }
@@ -35,7 +37,11 @@ fun Route.deleteTqById() {
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
-        call.respond(tqDataSource.deleteTqById(request.ticketId, request.questionId))
+        val wasAcknowledged = tqDataSource.deleteTqById(request.ticketId, request.questionId)
+        if(!wasAcknowledged){
+            call.respond(HttpStatusCode.Conflict, "tq not found")
+        }
+        call.respond(HttpStatusCode.OK, "tq deleted successfully")
     }
 }
 

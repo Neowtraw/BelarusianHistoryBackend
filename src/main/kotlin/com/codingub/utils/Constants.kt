@@ -14,6 +14,8 @@ object Constants {
         const val ROUTE_AUTHENTICATE = "users/authenticate"
         const val ROUTE_SECRET = "users/secret"
 
+        const val ROUTE_ROLE_CHANGE = "users/changerole"
+
         const val ROUTE_TICKET = "tickets"
         const val ROUTE_INSERT_TICKET = "tickets/insert"
         const val ROUTE_RESET_TICKET = "tickets/reset"

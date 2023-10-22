@@ -3,19 +3,18 @@ package com.codingub.data.repositories
 import com.codingub.data.HistoryDatabase
 import com.codingub.data.requests.InsertPqRequest
 import com.codingub.data.responses.PqResponse
-import com.codingub.data.responses.ServerResponse
 
 interface PqDataRepository{
     /*
         Administrator
      */
-    suspend fun insertPractice(tqId: String, question: InsertPqRequest) : ServerResponse<Any>
-    suspend fun deletePracticeById(tqId: String, questionId: String) : ServerResponse<Any>
+    suspend fun insertPractice(tqId: String, question: InsertPqRequest) : Boolean
+    suspend fun deletePracticeById(tqId: String, questionId: String) : Boolean
 
     /*
         User
      */
-    suspend fun getAllPracticeFromTq(tqId: String) : ServerResponse<PqResponse>
+    suspend fun getAllPracticeFromTq(tqId: String) : PqResponse
 
 }
 
@@ -23,15 +22,15 @@ class PqDataRepositoryImpl constructor(
     private val database: HistoryDatabase
 ) : PqDataRepository{
 
-    override suspend fun insertPractice(tqId: String, question: InsertPqRequest): ServerResponse<Any> {
+    override suspend fun insertPractice(tqId: String, question: InsertPqRequest): Boolean {
         return database.insertPractice(tqId, question)
     }
 
-    override suspend fun deletePracticeById(tqId: String, questionId: String): ServerResponse<Any> {
+    override suspend fun deletePracticeById(tqId: String, questionId: String): Boolean {
         return database.deletePracticeById(tqId, questionId)
     }
 
-    override suspend fun getAllPracticeFromTq(tqId: String): ServerResponse<PqResponse> {
+    override suspend fun getAllPracticeFromTq(tqId: String): PqResponse {
         return database.getAllPracticeFromTq(tqId)
     }
 }
