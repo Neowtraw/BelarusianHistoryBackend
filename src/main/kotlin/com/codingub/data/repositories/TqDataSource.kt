@@ -14,8 +14,8 @@ interface TqDataRepository {
     /*
         User
      */
-
-    suspend fun getAllTq(ticketId: String) : TqResponse
+    suspend fun getAllTq() : TqResponse
+    suspend fun getAllTqFromTicket(ticketId: String) : TqResponse
 }
 
 class TqDataRepositoryImpl constructor(
@@ -29,7 +29,11 @@ class TqDataRepositoryImpl constructor(
         return database.deleteTqById(ticketId, questionId)
     }
 
-    override suspend fun getAllTq(ticketId: String): TqResponse {
-        return database.getAllTq(ticketId)
+    override suspend fun getAllTqFromTicket(ticketId: String): TqResponse {
+        return database.getAllTqFromTicket(ticketId)
+    }
+
+    override suspend fun getAllTq() : TqResponse {
+        return database.getAllTq()
     }
 }

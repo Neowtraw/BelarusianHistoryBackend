@@ -15,7 +15,6 @@ import com.codingub.utils.Constants.EndPoints.ROUTE_SECRET
 import com.codingub.utils.Constants.EndPoints.ROUTE_SIGNIN
 import com.codingub.utils.Constants.EndPoints.ROUTE_SIGNUP
 import com.codingub.utils.Constants.USER_ID
-import com.codingub.utils.generateUserUid
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -41,7 +40,6 @@ fun Route.signUp() {
             login = request.login,
             password = saltedHash.hash,
             username = request.username,
-            UId = generateUserUid(),
             accessLevel = request.accessLevel,
             salt = saltedHash.salt
         )
@@ -96,7 +94,10 @@ fun Route.signIn(
         call.respond(
             status = HttpStatusCode.OK,
             message = AuthResponse(
-                token = token
+                token = token,
+                username = user.username,
+                accessLevel = user.accessLevel,
+                login = user.login
             )
         )
     }

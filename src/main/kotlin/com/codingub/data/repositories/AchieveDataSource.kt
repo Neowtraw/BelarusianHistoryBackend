@@ -11,7 +11,7 @@ interface AchieveDataRepository{
 
 }
 
-class AchieveDataRepositoryImpl constructor(
+class AchieveDataRepositoryImpl(
     val database: HistoryDatabase
 ) : AchieveDataRepository{
 

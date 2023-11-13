@@ -4,11 +4,11 @@ import com.codingub.data.models.achieves.Achieve
 import com.codingub.data.models.tickets.PracticeQuestion
 import com.codingub.data.models.tickets.Ticket
 import com.codingub.data.models.tickets.TicketQuestion
+import com.codingub.data.models.users.Group
 import com.codingub.data.models.users.User
-import com.codingub.data.requests.InsertPqRequest
-import com.codingub.data.requests.InsertTicketRequest
-import com.codingub.data.requests.InsertTqRequest
+import com.codingub.data.requests.*
 import com.codingub.data.responses.*
+import com.codingub.sdk.AccessLevel
 import com.codingub.utils.Constants
 import com.codingub.utils.HistoryLogger
 import com.mongodb.client.model.UpdateOptions
@@ -31,6 +31,7 @@ class HistoryDatabase {
     private val ticketCollection = database.getCollection<Ticket>()
     private val tqCollection = database.getCollection<TicketQuestion>()
     private val achieveCollection = database.getCollection<Achieve>()
+    private val groupCollection = database.getCollection<Group>()
 
     /*
         User
@@ -51,7 +52,7 @@ class HistoryDatabase {
         return userCollection.insertOne(user).wasAcknowledged()
     }
 
-    suspend fun changeRoleByLogin(login: String, accessLevel: Int): Boolean {
+    suspend fun changeRoleByLogin(login: String, accessLevel: AccessLevel): Boolean {
         val user = userCollection.findOne(User::login eq login)
         return if (user != null) {
             val updatedUser = user.copy(
@@ -64,6 +65,70 @@ class HistoryDatabase {
         } else {
             false
         }
+    }
+
+    /*
+        Group
+     */
+
+    suspend fun getAllGroupsFromTeacher(login: String): TeacherGroupResponse{
+        val groups = groupCollection.find(Group::teacher eq login).toList()
+        return TeacherGroupResponse(groups)
+    }
+
+    suspend fun createGroup(request: CreateGroupRequest) : Boolean{
+        val groups = groupCollection.find(Group::teacher eq request.teacher).toList()
+        groups.forEach{
+            if(it.name == request.groupName) return false
+        }
+        return groupCollection.insertOne(Group(name = request.groupName, teacher = request.teacher)).wasAcknowledged()
+    }
+
+    suspend fun deleteGroup(request: GroupRequest) : Boolean{
+        return if(groupCollection.findOne(Group::id eq request.groupId) == null) false
+        else groupCollection.deleteOne(Group::id eq request.groupId).wasAcknowledged()
+    }
+
+    suspend fun inviteUserToGroup(request: GroupRequest) : Boolean {
+        val user = userCollection.findOne(User::login eq request.login) ?: return false
+
+        // проверка, состоит ли User в группах или является ли он учителем
+        val isUserInGroups = groupCollection.find().toList().any { group ->
+            group.users.contains(user.login)
+        }
+
+        if(groupCollection.findOne(Group::teacher eq user.login) != null
+            && isUserInGroups) return false
+
+
+        val group = groupCollection.findOne(Group::id eq request.groupId) ?: return false
+        val userList: MutableList<String> = group.users.toMutableList()
+        userList.add(user.login)
+
+        val updatedGroup = group.copy(
+            users = userList
+        )
+        return groupCollection.updateOne(Group::id eq request.groupId, updatedGroup).wasAcknowledged()
+    }
+
+    suspend fun deleteUserFromGroup(request: GroupRequest) : Boolean {
+        val user = userCollection.findOne(User::login eq request.login) ?: return false
+
+        val group = groupCollection.findOne(Group::id eq request.groupId) ?: return false
+        val userList: MutableList<String> = group.users.toMutableList()
+        userList.remove(user.login)
+
+        val updatedGroup = group.copy(
+            users = userList
+        )
+        return groupCollection.updateOne(Group::id eq request.groupId, updatedGroup).wasAcknowledged()
+    }
+
+    suspend fun getUserGroupInfo(login: String): UserGroupResponse {
+        val user = userCollection.findOne(User::login eq login) ?: return UserGroupResponse(null)
+        return UserGroupResponse(groupCollection.find().toList().firstOrNull { group ->
+            group.users.contains(user.login)
+        })
     }
 
     /*
@@ -162,11 +227,20 @@ class HistoryDatabase {
         return false
     }
 
-    suspend fun getAllTq(ticketId: String): TqResponse {
+    suspend fun getAllTqFromTicket(ticketId: String): TqResponse {
         return TqResponse(
             ticketCollection.findOne(Ticket::id eq ticketId)?.questions
                 ?: emptyList()
         )
+    }
+
+    suspend fun getAllTq(): TqResponse {
+        val tqList = ticketCollection.find().toList().flatMap { ticket ->
+            ticket.questions.filter { tq ->
+               tq.practices.isNotEmpty()
+            }
+        }
+        return TqResponse(tqList)
     }
 
     /*
@@ -238,6 +312,4 @@ class HistoryDatabase {
             achieveCollection.find().toList()
         )
     }
-
-
 }

@@ -17,9 +17,9 @@ fun main(args: Array<String>): Unit =
 @Suppress("unused")
 fun Application.module() {
 
-    //for testing
     val database = KMongo.createClient(
         connectionString = "mongodb+srv://neowtraw:${Constants.MONGO_PW}@historycluster.xg5enip.mongodb.net/${Constants.MONGO_DB_NAME}?retryWrites=true&w=majority"
+
     ).coroutine
         .getDatabase(Constants.MONGO_DB_NAME)
 

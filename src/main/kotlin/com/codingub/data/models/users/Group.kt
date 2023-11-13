@@ -6,6 +6,6 @@ import org.bson.types.ObjectId
 data class Group(
     @BsonId val id: String = ObjectId().toString(),
     val name: String,
-    val teacherId: User,
-    val students: List<User> = emptyList()
+    val teacher: String, //login
+    val users: List<String> = emptyList() //login
 )

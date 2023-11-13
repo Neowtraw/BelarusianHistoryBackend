@@ -2,6 +2,7 @@ package com.codingub.data.repositories
 
 import com.codingub.data.HistoryDatabase
 import com.codingub.data.models.users.User
+import com.codingub.sdk.AccessLevel
 
 interface UserDataRepository {
     /*
@@ -14,7 +15,7 @@ interface UserDataRepository {
         User
      */
 
-    suspend fun changeRoleByLogin(login: String, accessLevel: Int) : Boolean
+    suspend fun changeRoleByLogin(login: String, accessLevel: AccessLevel) : Boolean
 }
 
 class UserDataRepositoryImpl constructor(
@@ -28,7 +29,7 @@ class UserDataRepositoryImpl constructor(
         return database.insertUser(user)
     }
 
-    override suspend fun changeRoleByLogin(login: String, accessLevel: Int): Boolean {
+    override suspend fun changeRoleByLogin(login: String, accessLevel: AccessLevel): Boolean {
         return database.changeRoleByLogin(login, accessLevel)
     }
 }

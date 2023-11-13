@@ -52,14 +52,14 @@ fun Route.deletePracticeById(){
     }
 }
 
-fun Route.getAllPractice(){
-    get(ROUTE_PQ) {
-        val request = kotlin.runCatching { call.receiveNullable<GetPqRequest>() }.getOrNull() ?: kotlin.run {
+fun Route.getAllPracticeFromTq(){
+    get("$ROUTE_PQ/") {
+        val request = kotlin.runCatching { call.request.queryParameters["id"] }.getOrNull() ?: kotlin.run {
             call.respond(HttpStatusCode.BadRequest)
             return@get
         }
         call.respond(
-            pqDataSource.getAllPracticeFromTq(request.tqId)
+            pqDataSource.getAllPracticeFromTq(request)
         )
         return@get
     }

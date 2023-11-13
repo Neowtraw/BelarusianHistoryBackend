@@ -29,5 +29,13 @@ object Constants {
         const val ROUTE_RESET_PQ = "pq/reset"
 
         const val ROUTE_ACHIEVE = "achieves"
+
+        const val ROUTE_GROUP = "groups"
+        const val ROUTE_INSERT_GROUP = "groups/insert"
+        const val ROUTE_RESET_GROUP = "groups/insert"
+        const val ROUTE_INVITE_USER_GROUP = "groups/insert"
+        const val ROUTE_DELETE_USER_GROUP = "groups/insert"
+
+
     }
 }

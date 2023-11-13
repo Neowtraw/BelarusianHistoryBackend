@@ -11,8 +11,8 @@ import io.ktor.server.routing.*
 import org.koin.java.KoinJavaComponent
 
 private val userDataSource: UserDataRepository by KoinJavaComponent.inject(UserDataRepository::class.java)
-fun Route.changeRoleByLogin(){
-    post(ROUTE_ROLE_CHANGE){
+fun Route.changeRoleByLogin() {
+    post(ROUTE_ROLE_CHANGE) {
         val request = kotlin.runCatching { call.receiveNullable<RoleRequest>() }.getOrNull() ?: kotlin.run {
             call.respond(HttpStatusCode.BadRequest)
             return@post
