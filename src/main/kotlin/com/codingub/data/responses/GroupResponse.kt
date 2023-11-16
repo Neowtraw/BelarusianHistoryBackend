@@ -2,10 +2,6 @@ package com.codingub.data.responses
 
 import com.codingub.data.models.users.Group
 
-data class TeacherGroupResponse(
+data class GroupResponse(
     val groups: List<Group>
-)
-
-data class UserGroupResponse(
-    val group: Group?
 )

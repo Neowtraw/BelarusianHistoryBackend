@@ -31,8 +31,7 @@ fun Application.configureRouting(
         deleteGroup()
         inviteUserToGroup()
         deleteUserFromGroup()
-        getAllGroupsFromTeacher()
-        getUserGroupInfo()
+        getAllGroups()
 
         /*
             Tickets

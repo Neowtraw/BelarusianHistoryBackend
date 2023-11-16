@@ -90,27 +90,14 @@ fun Route.deleteUserFromGroup() {
     }
 }
 
-fun Route.getAllGroupsFromTeacher() {
-    get("$ROUTE_GROUP/") {
-        val request = kotlin.runCatching { call.request.queryParameters["teacher"] }.getOrNull() ?: kotlin.run {
-            call.respond(HttpStatusCode.BadRequest, "Missing ticket request parameter")
-            return@get
-        }
-        call.respond(
-            groupDataSource.getAllGroupsFromTeacher(request)
-        )
-        return@get
-    }
-}
-
-fun Route.getUserGroupInfo() {
+fun Route.getAllGroups() {
     get("$ROUTE_GROUP/") {
         val request = kotlin.runCatching { call.request.queryParameters["user"] }.getOrNull() ?: kotlin.run {
             call.respond(HttpStatusCode.BadRequest, "Missing ticket request parameter")
             return@get
         }
         call.respond(
-            groupDataSource.getUserGroupInfo(request)
+            groupDataSource.getAllGroups(request)
         )
     }
 }

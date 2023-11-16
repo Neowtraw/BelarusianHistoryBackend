@@ -2,15 +2,13 @@ package com.codingub.data.repositories
 
 import com.codingub.data.HistoryDatabase
 import com.codingub.data.requests.*
-import com.codingub.data.responses.TeacherGroupResponse
-import com.codingub.data.responses.UserGroupResponse
+import com.codingub.data.responses.GroupResponse
 
 interface GroupDataRepository{
 
     /*
         Teacher
      */
-    suspend fun getAllGroupsFromTeacher(login: String): TeacherGroupResponse
     suspend fun createGroup(request: CreateGroupRequest) : Boolean
     suspend fun deleteGroup(request: GroupRequest) : Boolean
     suspend fun inviteUserToGroup(request: GroupRequest) : Boolean
@@ -19,15 +17,15 @@ interface GroupDataRepository{
     /*
         User
      */
-    suspend fun getUserGroupInfo(login: String) : UserGroupResponse
+    suspend fun getAllGroups(login: String) : GroupResponse
 }
 
 class GroupDataRepositoryImpl(
     private val database: HistoryDatabase
 ) : GroupDataRepository{
 
-    override suspend fun getAllGroupsFromTeacher(login: String): TeacherGroupResponse{
-        return database.getAllGroupsFromTeacher(login)
+    override suspend fun getAllGroups(login: String): GroupResponse{
+        return database.getAllGroups(login)
     }
 
     override suspend fun createGroup(request: CreateGroupRequest): Boolean {
@@ -44,9 +42,5 @@ class GroupDataRepositoryImpl(
 
     override suspend fun deleteUserFromGroup(request: GroupRequest): Boolean {
         return database.deleteUserFromGroup(request)
-    }
-
-    override suspend fun getUserGroupInfo(login: String): UserGroupResponse {
-        return database.getUserGroupInfo(login)
     }
 }

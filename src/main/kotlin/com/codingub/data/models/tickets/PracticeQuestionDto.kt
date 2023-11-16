@@ -1,17 +1,18 @@
 package com.codingub.data.models.tickets
 
-import com.codingub.data.models.achieves.Achieve
+import com.codingub.sdk.TaskType
 import kotlinx.serialization.Serializable
 import org.bson.codecs.pojo.annotations.BsonId
 import org.bson.types.ObjectId
 
-data class PracticeQuestion(
+data class PracticeQuestionDto(
     @BsonId val id: String = ObjectId().toString(),
-    val taskType: Int,
+    val taskType: TaskType,
     val name: String,
     val info: String,
+    val answers: List<Answer> = emptyList(),
 
-    val answers: List<Answer> = emptyList()
+    val tqId: String
 )
 
 //internal collection

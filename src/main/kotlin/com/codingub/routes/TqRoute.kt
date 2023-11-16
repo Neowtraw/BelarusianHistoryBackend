@@ -21,7 +21,7 @@ fun Route.insertTq() {
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
-        val wasAcknowledged = tqDataSource.insertTq(ticketId = request.ticketId, question = request)
+        val wasAcknowledged = tqDataSource.insertTq(question = request)
         if(!wasAcknowledged){
             call.respond(HttpStatusCode.Conflict, "tq not found")
         }
@@ -36,7 +36,7 @@ fun Route.deleteTqById() {
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
-        val wasAcknowledged = tqDataSource.deleteTqById(request.ticketId, request.questionId)
+        val wasAcknowledged = tqDataSource.deleteTqById(request.questionId)
         if(!wasAcknowledged){
             call.respond(HttpStatusCode.Conflict, "tq not found")
         }

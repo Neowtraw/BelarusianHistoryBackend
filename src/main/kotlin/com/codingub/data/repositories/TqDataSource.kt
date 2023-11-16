@@ -8,8 +8,8 @@ interface TqDataRepository {
     /*
        Administrator
     */
-    suspend fun insertTq(ticketId: String, question: InsertTqRequest) : Boolean
-    suspend fun deleteTqById(ticketId: String, questionId: String) : Boolean
+    suspend fun insertTq(question: InsertTqRequest) : Boolean
+    suspend fun deleteTqById(questionId: String) : Boolean
 
     /*
         User
@@ -21,12 +21,12 @@ interface TqDataRepository {
 class TqDataRepositoryImpl constructor(
    private val database: HistoryDatabase
 ) : TqDataRepository{
-    override suspend fun insertTq(ticketId: String, question: InsertTqRequest): Boolean {
-        return database.insertOrUpdateTq(ticketId, question)
+    override suspend fun insertTq(question: InsertTqRequest): Boolean {
+        return database.insertOrUpdateTq(question)
     }
 
-    override suspend fun deleteTqById(ticketId: String, questionId: String): Boolean {
-        return database.deleteTqById(ticketId, questionId)
+    override suspend fun deleteTqById(questionId: String): Boolean {
+        return database.deleteTqById(questionId)
     }
 
     override suspend fun getAllTqFromTicket(ticketId: String): TqResponse {

@@ -2,7 +2,6 @@ package com.codingub.routes
 
 import com.codingub.data.repositories.PqDataRepository
 import com.codingub.data.requests.DeletePqRequest
-import com.codingub.data.requests.GetPqRequest
 import com.codingub.data.requests.InsertPqRequest
 import com.codingub.utils.Constants.EndPoints.ROUTE_INSERT_PQ
 import com.codingub.utils.Constants.EndPoints.ROUTE_PQ
@@ -23,7 +22,7 @@ fun Route.insertPractice(){
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
-        val wasAcknowledged = pqDataSource.insertPractice(tqId = request.tqId, question = request)
+        val wasAcknowledged = pqDataSource.insertPractice(question = request)
         if(!wasAcknowledged) {
             call.respond(HttpStatusCode.Conflict, "Practice not found")
             return@post
@@ -40,7 +39,7 @@ fun Route.deletePracticeById(){
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
-        val wasAcknowledged =pqDataSource.deletePracticeById(request.tqId, request.questionId)
+        val wasAcknowledged =pqDataSource.deletePracticeById(request.questionId)
 
         if(!wasAcknowledged){
             call.respond(HttpStatusCode.Conflict, "Practice not found")

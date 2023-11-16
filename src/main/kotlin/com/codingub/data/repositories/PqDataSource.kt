@@ -8,8 +8,8 @@ interface PqDataRepository{
     /*
         Administrator
      */
-    suspend fun insertPractice(tqId: String, question: InsertPqRequest) : Boolean
-    suspend fun deletePracticeById(tqId: String, questionId: String) : Boolean
+    suspend fun insertPractice(question: InsertPqRequest) : Boolean
+    suspend fun deletePracticeById(questionId: String) : Boolean
 
     /*
         User
@@ -22,12 +22,12 @@ class PqDataRepositoryImpl constructor(
     private val database: HistoryDatabase
 ) : PqDataRepository{
 
-    override suspend fun insertPractice(tqId: String, question: InsertPqRequest): Boolean {
-        return database.insertPractice(tqId, question)
+    override suspend fun insertPractice(question: InsertPqRequest): Boolean {
+        return database.insertPractice(question)
     }
 
-    override suspend fun deletePracticeById(tqId: String, questionId: String): Boolean {
-        return database.deletePracticeById(tqId, questionId)
+    override suspend fun deletePracticeById(questionId: String): Boolean {
+        return database.deletePracticeById(questionId)
     }
 
     override suspend fun getAllPracticeFromTq(tqId: String): PqResponse {

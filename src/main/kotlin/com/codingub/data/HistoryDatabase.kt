@@ -1,23 +1,22 @@
 package com.codingub.data
 
 import com.codingub.data.models.achieves.Achieve
-import com.codingub.data.models.tickets.PracticeQuestion
-import com.codingub.data.models.tickets.Ticket
-import com.codingub.data.models.tickets.TicketQuestion
+import com.codingub.data.models.tickets.PracticeQuestionDto
+import com.codingub.data.models.tickets.TicketDto
+import com.codingub.data.models.tickets.TicketQuestionDto
 import com.codingub.data.models.users.Group
 import com.codingub.data.models.users.User
 import com.codingub.data.requests.*
 import com.codingub.data.responses.*
+import com.codingub.data.responses.models.PracticeQuestion
+import com.codingub.data.responses.models.Ticket
+import com.codingub.data.responses.models.TicketQuestion
 import com.codingub.sdk.AccessLevel
 import com.codingub.utils.Constants
 import com.codingub.utils.HistoryLogger
-import com.mongodb.client.model.UpdateOptions
+import org.litote.kmongo.*
 import org.litote.kmongo.coroutine.coroutine
-import org.litote.kmongo.eq
-import org.litote.kmongo.pull
-import org.litote.kmongo.push
 import org.litote.kmongo.reactivestreams.KMongo
-import org.litote.kmongo.setValue
 
 class HistoryDatabase {
 
@@ -28,8 +27,9 @@ class HistoryDatabase {
 
     //tables of all data
     private val userCollection = database.getCollection<User>()
-    private val ticketCollection = database.getCollection<Ticket>()
-    private val tqCollection = database.getCollection<TicketQuestion>()
+    private val ticketCollection = database.getCollection<TicketDto>()
+    private val tqCollection = database.getCollection<TicketQuestionDto>()
+    private val pqCollection = database.getCollection<PracticeQuestionDto>()
     private val achieveCollection = database.getCollection<Achieve>()
     private val groupCollection = database.getCollection<Group>()
 
@@ -71,25 +71,34 @@ class HistoryDatabase {
         Group
      */
 
-    suspend fun getAllGroupsFromTeacher(login: String): TeacherGroupResponse{
+    suspend fun getAllGroups(login: String): GroupResponse {
+        val user = userCollection.findOne(User::login eq login)
+
+        if (user?.accessLevel == AccessLevel.User) {
+            val group = groupCollection.find().toList().firstOrNull { group ->
+                group.users.contains(user.login)
+            }
+            return GroupResponse(group?.let { listOf(it) } ?: emptyList())
+        }
+
         val groups = groupCollection.find(Group::teacher eq login).toList()
-        return TeacherGroupResponse(groups)
+        return GroupResponse(groups)
     }
 
-    suspend fun createGroup(request: CreateGroupRequest) : Boolean{
+    suspend fun createGroup(request: CreateGroupRequest): Boolean {
         val groups = groupCollection.find(Group::teacher eq request.teacher).toList()
-        groups.forEach{
-            if(it.name == request.groupName) return false
+        groups.forEach {
+            if (it.name == request.groupName) return false
         }
         return groupCollection.insertOne(Group(name = request.groupName, teacher = request.teacher)).wasAcknowledged()
     }
 
-    suspend fun deleteGroup(request: GroupRequest) : Boolean{
-        return if(groupCollection.findOne(Group::id eq request.groupId) == null) false
+    suspend fun deleteGroup(request: GroupRequest): Boolean {
+        return if (groupCollection.findOne(Group::id eq request.groupId) == null) false
         else groupCollection.deleteOne(Group::id eq request.groupId).wasAcknowledged()
     }
 
-    suspend fun inviteUserToGroup(request: GroupRequest) : Boolean {
+    suspend fun inviteUserToGroup(request: GroupRequest): Boolean {
         val user = userCollection.findOne(User::login eq request.login) ?: return false
 
         // проверка, состоит ли User в группах или является ли он учителем
@@ -97,8 +106,9 @@ class HistoryDatabase {
             group.users.contains(user.login)
         }
 
-        if(groupCollection.findOne(Group::teacher eq user.login) != null
-            && isUserInGroups) return false
+        if (groupCollection.findOne(Group::teacher eq user.login) != null
+            && isUserInGroups
+        ) return false
 
 
         val group = groupCollection.findOne(Group::id eq request.groupId) ?: return false
@@ -111,7 +121,7 @@ class HistoryDatabase {
         return groupCollection.updateOne(Group::id eq request.groupId, updatedGroup).wasAcknowledged()
     }
 
-    suspend fun deleteUserFromGroup(request: GroupRequest) : Boolean {
+    suspend fun deleteUserFromGroup(request: GroupRequest): Boolean {
         val user = userCollection.findOne(User::login eq request.login) ?: return false
 
         val group = groupCollection.findOne(Group::id eq request.groupId) ?: return false
@@ -124,21 +134,14 @@ class HistoryDatabase {
         return groupCollection.updateOne(Group::id eq request.groupId, updatedGroup).wasAcknowledged()
     }
 
-    suspend fun getUserGroupInfo(login: String): UserGroupResponse {
-        val user = userCollection.findOne(User::login eq login) ?: return UserGroupResponse(null)
-        return UserGroupResponse(groupCollection.find().toList().firstOrNull { group ->
-            group.users.contains(user.login)
-        })
-    }
-
     /*
         Ticket
      */
 
     suspend fun deleteTicketByName(name: String): Boolean {
-        val ticket = ticketCollection.findOne(Ticket::name eq name)
+        val ticket = ticketCollection.findOne(TicketDto::name eq name)
         return if (ticket != null) {
-            ticketCollection.deleteOne(Ticket::name eq name).wasAcknowledged()
+            ticketCollection.deleteOne(TicketDto::name eq name).wasAcknowledged()
         } else {
             HistoryLogger.info("Ticket not found")
             false
@@ -146,13 +149,39 @@ class HistoryDatabase {
     }
 
     suspend fun getAllTickets(): TicketResponse {
-        return TicketResponse(
-            ticketList = ticketCollection.find().toList()
-        )
+        val tickets = ticketCollection.find().toList()
+        val ticketMap = tickets.associate { ticket ->
+            val tqs = tqCollection.find(TicketQuestionDto::ticketId eq ticket.id).toList().map { tq ->
+                val practices = pqCollection.find(PracticeQuestionDto::tqId eq tq.id).toList().map { practice ->
+                    PracticeQuestion(
+                        taskType = practice.taskType,
+                        id = practice.id,
+                        name = practice.name,
+                        info = practice.info,
+                        answers = practice.answers
+                    )
+                }
+
+                TicketQuestion(
+                    id = tq.id,
+                    name = tq.name,
+                    info = tq.info,
+                    practices = practices,
+                    achieve = tq.achieve
+                )
+            }
+            ticket.id to Ticket(ticket.id, ticket.name, ticket.timer, tqs, ticket.achievement)
+        }
+
+        val ticketList = tickets.map { ticket ->
+            ticketMap[ticket.id] ?: Ticket(ticket.id, ticket.name, ticket.timer, emptyList(), ticket.achievement)
+        }
+
+        return TicketResponse(ticketList)
     }
 
     suspend fun insertOrUpdateTicket(request: InsertTicketRequest): Boolean {
-        val ticket = ticketCollection.findOne(Ticket::name eq request.name)
+        val ticket = ticketCollection.findOne(TicketDto::name eq request.name)
 
         if (ticket != null) {
             val updatedTicket = ticket.copy(
@@ -162,145 +191,150 @@ class HistoryDatabase {
             )
             if (ticket != updatedTicket)
                 return ticketCollection.updateOne(
-                    Ticket::id eq ticket.id,
+                    TicketDto::id eq ticket.id,
                     updatedTicket
                 ).wasAcknowledged()
         } else {
-            val insertedTicket = Ticket(
+            val insertedTicket = TicketDto(
                 name = request.name,
                 timer = request.timer,
                 achievement = request.achieve
             )
             return ticketCollection.insertOne(insertedTicket).wasAcknowledged()
         }
-        HistoryLogger.info("Ticket not found")
         return false
     }
 
     /*
         TicketQuestion
      */
-    suspend fun insertOrUpdateTq(ticketId: String, question: InsertTqRequest): Boolean {
-        val tqList = ticketCollection.findOne(Ticket::id eq ticketId)?.questions
-            ?: emptyList()
-        val tq = tqList.find { it.name == question.name }
+    suspend fun insertOrUpdateTq(question: InsertTqRequest): Boolean {
+        val tq = tqCollection.findOne(TicketQuestionDto::name eq question.name)
 
         if (tq != null) {
-            val updatedList = tqList.map {
-                if (it.id == question.ticketId) {
-                    it.copy(
-                        name = question.name,
-                        info = question.info,
-                        achieve = question.achieve
-                    )
-                } else {
-                    it
-                }
-            }
-            return ticketCollection.updateOne(Ticket::id eq ticketId, setValue(Ticket::questions, updatedList))
-                .wasAcknowledged()
-
-        } else {
-            val insertedTq = TicketQuestion(
-                name = question.name,
-                info = question.info,
-                achieve = question.achieve
-            )
-
-            return ticketCollection.updateOne(
-                Ticket::id eq ticketId,
-                push(Ticket::questions, insertedTq),
-                UpdateOptions().upsert(true)
+            val updatedTq =
+                tq.copy(
+                    name = question.name,
+                    info = question.info,
+                    achieve = question.achieve
+                )
+            return tqCollection.replaceOne(
+                TicketQuestionDto::id eq tq.id, updatedTq
             ).wasAcknowledged()
         }
+
+        val insertedTq = TicketQuestionDto(
+            name = question.name,
+            info = question.info,
+            achieve = question.achieve,
+            ticketId = question.ticketId
+        )
+
+        return tqCollection.insertOne(insertedTq).wasAcknowledged()
     }
 
-    suspend fun deleteTqById(ticketId: String, questionId: String): Boolean {
-        val tqList = ticketCollection.findOne(Ticket::id eq ticketId)?.questions ?: emptyList()
-        val tq = tqList.find { it.id == questionId }
+    suspend fun deleteTqById(questionId: String): Boolean {
+        val tq = tqCollection.findOne(TicketQuestionDto::id eq questionId)
 
         if (tq != null) {
-            return ticketCollection.updateOne(Ticket::id eq ticketId, pull(Ticket::questions, tq))
-                .wasAcknowledged()
+            return tqCollection.deleteOne(TicketQuestionDto::id eq questionId).wasAcknowledged()
         }
-        HistoryLogger.info("No tq to delete")
         return false
     }
 
     suspend fun getAllTqFromTicket(ticketId: String): TqResponse {
-        return TqResponse(
-            ticketCollection.findOne(Ticket::id eq ticketId)?.questions
-                ?: emptyList()
-        )
+        val tqs = tqCollection.find(TicketQuestionDto::ticketId eq ticketId).toList()
+
+        val ticketQuestionList = tqs.map { tq ->
+            val practices = pqCollection.find(PracticeQuestionDto::tqId eq tq.id).toList()
+                .map { practice ->
+                    PracticeQuestion(
+                        taskType = practice.taskType,
+                        id = practice.id,
+                        name = practice.name,
+                        info = practice.info,
+                        answers = practice.answers
+                    )
+                }
+            TicketQuestion(tq.id, tq.name, tq.info, practices, tq.achieve)
+        }
+
+        return TqResponse(ticketQuestionList)
     }
 
     suspend fun getAllTq(): TqResponse {
-        val tqList = ticketCollection.find().toList().flatMap { ticket ->
-            ticket.questions.filter { tq ->
-               tq.practices.isNotEmpty()
+        val pqList = pqCollection.find().toList()
+        val tqIdList = pqList.map { it.tqId }
+
+        // тикеты с практикой
+        val tqs = tqCollection.find(TicketQuestionDto::id `in` tqIdList).toList()
+
+        val ticketQuestionList = tqs.map { tq ->
+            val practices = pqList.filter { it.tqId == tq.id }.map { practice ->
+                PracticeQuestion(
+                    taskType = practice.taskType,
+                    id = practice.id,
+                    name = practice.name,
+                    info = practice.info,
+                    answers = practice.answers
+                )
             }
+            TicketQuestion(tq.id, tq.name, tq.info, practices, tq.achieve)
         }
-        return TqResponse(tqList)
+        return TqResponse(ticketQuestionList)
     }
 
     /*
        PracticeQuestion
     */
 
-    suspend fun insertPractice(tqId: String, question: InsertPqRequest): Boolean {
-        val pqList = tqCollection.findOne(TicketQuestion::id eq tqId)?.practices
-            ?: emptyList()
-        val pq = pqList.find { it.name == question.name }
+    suspend fun insertPractice(question: InsertPqRequest): Boolean {
+        val pq = pqCollection.findOne(PracticeQuestionDto::name eq question.name)
 
         if (pq != null) {
-            val updatedList = pqList.map {
-                if (it.name == question.name) {
-                    it.copy(
-                        info = question.info,
-                        taskType = question.taskType,
-                        answers = question.answers
-                    )
-                } else {
-                    it
-                }
-            }
-            return ticketCollection.updateOne(
-                TicketQuestion::id eq tqId,
-                setValue(TicketQuestion::practices, updatedList)
-            )
-                .wasAcknowledged()
-        } else {
-            val insertedPq = PracticeQuestion(
-                name = question.name,
+            val updatedPq = pq.copy(
                 info = question.info,
                 taskType = question.taskType,
                 answers = question.answers
             )
-            return ticketCollection.updateOne(
-                TicketQuestion::id eq tqId,
-                push(TicketQuestion::practices, insertedPq),
-                UpdateOptions().upsert(true)
+
+            return pqCollection.replaceOne(
+                PracticeQuestionDto::id eq pq.id, updatedPq
             ).wasAcknowledged()
         }
+
+        val insertedPq = PracticeQuestionDto(
+            name = question.name,
+            info = question.info,
+            taskType = question.taskType,
+            answers = question.answers,
+            tqId = question.tqId
+        )
+        return pqCollection.insertOne(insertedPq).wasAcknowledged()
+
     }
 
-    suspend fun deletePracticeById(tqId: String, questionId: String): Boolean {
-        val pqList = tqCollection.findOne(TicketQuestion::id eq tqId)?.practices ?: emptyList()
-        val pq = pqList.find { it.id == questionId }
+    suspend fun deletePracticeById(questionId: String): Boolean {
+        val pq = pqCollection.findOne(PracticeQuestionDto::id eq questionId)
 
         if (pq != null) {
-            return ticketCollection.updateOne(Ticket::id eq tqId, pull(TicketQuestion::practices, pq))
+            return pqCollection.deleteOne(PracticeQuestionDto::id eq questionId)
                 .wasAcknowledged()
         }
-        HistoryLogger.info("No pq to delete")
         return false
     }
 
     suspend fun getAllPracticeFromTq(tqId: String): PqResponse {
-        return PqResponse(
-            tqCollection.findOne(TicketQuestion::id eq tqId)?.practices ?: emptyList()
+        return PqResponse( pqCollection.find(PracticeQuestionDto::tqId eq tqId).toList().map { pq ->
+            PracticeQuestion(
+                id = pq.id,
+                taskType = pq.taskType,
+                name = pq.name,
+                info = pq.info,
+                answers = pq.answers
+            )
+        }
         )
-
     }
 
     /*
