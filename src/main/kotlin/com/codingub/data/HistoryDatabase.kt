@@ -8,6 +8,7 @@ import com.codingub.data.models.users.Group
 import com.codingub.data.models.users.User
 import com.codingub.data.requests.*
 import com.codingub.data.responses.*
+import com.codingub.data.models.Event
 import com.codingub.data.responses.models.PracticeQuestion
 import com.codingub.data.responses.models.Ticket
 import com.codingub.data.responses.models.TicketQuestion
@@ -32,6 +33,7 @@ class HistoryDatabase {
     private val pqCollection = database.getCollection<PracticeQuestionDto>()
     private val achieveCollection = database.getCollection<Achieve>()
     private val groupCollection = database.getCollection<Group>()
+    private val eventCollection = database.getCollection<Event>()
 
     /*
         User
@@ -325,7 +327,7 @@ class HistoryDatabase {
     }
 
     suspend fun getAllPracticeFromTq(tqId: String): PqResponse {
-        return PqResponse( pqCollection.find(PracticeQuestionDto::tqId eq tqId).toList().map { pq ->
+        return PqResponse(pqCollection.find(PracticeQuestionDto::tqId eq tqId).toList().map { pq ->
             PracticeQuestion(
                 id = pq.id,
                 taskType = pq.taskType,
@@ -344,6 +346,16 @@ class HistoryDatabase {
     suspend fun getAllAchieves(): AchieveResponse {
         return AchieveResponse(
             achieveCollection.find().toList()
+        )
+    }
+
+    /*
+        Events
+     */
+
+    suspend fun getAllEvents(): EventResponse {
+        return EventResponse(
+            eventCollection.find().toList()
         )
     }
 }

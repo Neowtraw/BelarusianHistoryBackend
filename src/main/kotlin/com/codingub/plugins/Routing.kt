@@ -60,5 +60,10 @@ fun Application.configureRouting(
             Achieve
          */
         getAllAchieves()
+
+        /*
+            Event
+         */
+        getAllEvents()
     }
 }
