@@ -1,6 +1,6 @@
 package com.codingub.routes
 
-import com.codingub.data.models.users.User
+import com.codingub.data.models.users.UserDto
 import com.codingub.data.repositories.UserDataRepository
 import com.codingub.data.requests.LoginRequest
 import com.codingub.data.requests.RegisterRequest
@@ -36,7 +36,7 @@ fun Route.signUp() {
             return@post
         }
         val saltedHash = hashingService.generateSaltedHash(request.password)
-        val user = User(
+        val user = UserDto(
             login = request.login,
             password = saltedHash.hash,
             username = request.username,

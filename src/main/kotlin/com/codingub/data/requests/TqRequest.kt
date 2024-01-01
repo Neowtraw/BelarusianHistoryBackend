@@ -1,7 +1,6 @@
 package com.codingub.data.requests
 
-import com.codingub.data.models.achieves.Achieve
-import kotlinx.serialization.Serializable
+import com.codingub.data.models.achieves.AchieveDto
 
 data class DeleteTqRequest (
     val questionId: String
@@ -9,6 +8,6 @@ data class DeleteTqRequest (
 data class InsertTqRequest(
     val name: String,
     val info: String,
-    val achieve: Achieve? = null,
+    val achieve: AchieveDto? = null,
     val ticketId: String
     )

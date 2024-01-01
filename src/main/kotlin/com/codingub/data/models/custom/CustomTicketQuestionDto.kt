@@ -8,7 +8,6 @@ data class CustomTicketQuestion(
     @BsonId val id : String = ObjectId().toString(),
     val name: String,
     val info: String,
-
     var practices: List<CustomPracticeQuestion> = emptyList()
 )
 

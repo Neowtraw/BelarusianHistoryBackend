@@ -1,7 +1,7 @@
 package com.codingub.data.responses
 
-import com.codingub.data.models.achieves.Achieve
+import com.codingub.data.models.achieves.AchieveDto
 
 data class AchieveResponse(
-    val achieveList: List<Achieve>
+    val achieveList: List<AchieveDto>
 )

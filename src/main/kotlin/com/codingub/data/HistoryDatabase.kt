@@ -1,18 +1,20 @@
 package com.codingub.data
 
-import com.codingub.data.models.achieves.Achieve
+import com.codingub.data.models.achieves.AchieveDto
 import com.codingub.data.models.tickets.PracticeQuestionDto
 import com.codingub.data.models.tickets.TicketDto
 import com.codingub.data.models.tickets.TicketQuestionDto
-import com.codingub.data.models.users.Group
-import com.codingub.data.models.users.User
+import com.codingub.data.models.users.GroupDto
+import com.codingub.data.models.users.UserDto
 import com.codingub.data.requests.*
 import com.codingub.data.responses.*
-import com.codingub.data.models.Event
+import com.codingub.data.models.events.EventDto
+import com.codingub.data.models.users.ResultDto
 import com.codingub.data.responses.models.PracticeQuestion
 import com.codingub.data.responses.models.Ticket
 import com.codingub.data.responses.models.TicketQuestion
 import com.codingub.sdk.AccessLevel
+import com.codingub.sdk.AchieveType
 import com.codingub.utils.Constants
 import com.codingub.utils.HistoryLogger
 import org.litote.kmongo.*
@@ -27,23 +29,24 @@ class HistoryDatabase {
         .getDatabase(Constants.MONGO_DB_NAME)
 
     //tables of all data
-    private val userCollection = database.getCollection<User>()
+    private val userCollection = database.getCollection<UserDto>()
     private val ticketCollection = database.getCollection<TicketDto>()
     private val tqCollection = database.getCollection<TicketQuestionDto>()
     private val pqCollection = database.getCollection<PracticeQuestionDto>()
-    private val achieveCollection = database.getCollection<Achieve>()
-    private val groupCollection = database.getCollection<Group>()
-    private val eventCollection = database.getCollection<Event>()
+    private val achieveCollection = database.getCollection<AchieveDto>()
+    private val groupCollection = database.getCollection<GroupDto>()
+    private val eventCollection = database.getCollection<EventDto>()
+    private val resultCollection = database.getCollection<ResultDto>()
 
     /*
         User
      */
-    suspend fun getUserByLogin(login: String): User? {
-        return userCollection.findOne(User::login eq login)
+    suspend fun getUserByLogin(login: String): UserDto? {
+        return userCollection.findOne(UserDto::login eq login)
     }
 
-    suspend fun insertUser(user: User): Boolean {
-        val foundUser = userCollection.findOne(User::login eq user.login)
+    suspend fun insertUser(user: UserDto): Boolean {
+        val foundUser = userCollection.findOne(UserDto::login eq user.login)
 
         if (foundUser != null) {
             HistoryLogger.info("Such login is already used")
@@ -55,13 +58,13 @@ class HistoryDatabase {
     }
 
     suspend fun changeRoleByLogin(login: String, accessLevel: AccessLevel): Boolean {
-        val user = userCollection.findOne(User::login eq login)
+        val user = userCollection.findOne(UserDto::login eq login)
         return if (user != null) {
             val updatedUser = user.copy(
                 accessLevel = accessLevel
             )
             userCollection.updateOne(
-                User::login eq login,
+                UserDto::login eq login,
                 updatedUser
             ).wasAcknowledged()
         } else {
@@ -74,7 +77,7 @@ class HistoryDatabase {
      */
 
     suspend fun getAllGroups(login: String): GroupResponse {
-        val user = userCollection.findOne(User::login eq login)
+        val user = userCollection.findOne(UserDto::login eq login)
 
         if (user?.accessLevel == AccessLevel.User) {
             val group = groupCollection.find().toList().firstOrNull { group ->
@@ -83,57 +86,58 @@ class HistoryDatabase {
             return GroupResponse(group?.let { listOf(it) } ?: emptyList())
         }
 
-        val groups = groupCollection.find(Group::teacher eq login).toList()
+        val groups = groupCollection.find(GroupDto::teacher eq login).toList()
         return GroupResponse(groups)
     }
 
     suspend fun createGroup(request: CreateGroupRequest): Boolean {
-        val groups = groupCollection.find(Group::teacher eq request.teacher).toList()
+        val groups = groupCollection.find(GroupDto::teacher eq request.teacher).toList()
         groups.forEach {
             if (it.name == request.groupName) return false
         }
-        return groupCollection.insertOne(Group(name = request.groupName, teacher = request.teacher)).wasAcknowledged()
+        return groupCollection.insertOne(GroupDto(name = request.groupName, teacher = request.teacher))
+            .wasAcknowledged()
     }
 
     suspend fun deleteGroup(request: GroupRequest): Boolean {
-        return if (groupCollection.findOne(Group::id eq request.groupId) == null) false
-        else groupCollection.deleteOne(Group::id eq request.groupId).wasAcknowledged()
+        return if (groupCollection.findOne(GroupDto::id eq request.groupId) == null) false
+        else groupCollection.deleteOne(GroupDto::id eq request.groupId).wasAcknowledged()
     }
 
     suspend fun inviteUserToGroup(request: GroupRequest): Boolean {
-        val user = userCollection.findOne(User::login eq request.login) ?: return false
+        val user = userCollection.findOne(UserDto::login eq request.login) ?: return false
 
         // проверка, состоит ли User в группах или является ли он учителем
         val isUserInGroups = groupCollection.find().toList().any { group ->
             group.users.contains(user.login)
         }
 
-        if (groupCollection.findOne(Group::teacher eq user.login) != null
+        if (groupCollection.findOne(GroupDto::teacher eq user.login) != null
             && isUserInGroups
         ) return false
 
 
-        val group = groupCollection.findOne(Group::id eq request.groupId) ?: return false
+        val group = groupCollection.findOne(GroupDto::id eq request.groupId) ?: return false
         val userList: MutableList<String> = group.users.toMutableList()
         userList.add(user.login)
 
         val updatedGroup = group.copy(
             users = userList
         )
-        return groupCollection.updateOne(Group::id eq request.groupId, updatedGroup).wasAcknowledged()
+        return groupCollection.updateOne(GroupDto::id eq request.groupId, updatedGroup).wasAcknowledged()
     }
 
     suspend fun deleteUserFromGroup(request: GroupRequest): Boolean {
-        val user = userCollection.findOne(User::login eq request.login) ?: return false
+        val user = userCollection.findOne(UserDto::login eq request.login) ?: return false
 
-        val group = groupCollection.findOne(Group::id eq request.groupId) ?: return false
+        val group = groupCollection.findOne(GroupDto::id eq request.groupId) ?: return false
         val userList: MutableList<String> = group.users.toMutableList()
         userList.remove(user.login)
 
         val updatedGroup = group.copy(
             users = userList
         )
-        return groupCollection.updateOne(Group::id eq request.groupId, updatedGroup).wasAcknowledged()
+        return groupCollection.updateOne(GroupDto::id eq request.groupId, updatedGroup).wasAcknowledged()
     }
 
     /*
@@ -236,12 +240,8 @@ class HistoryDatabase {
     }
 
     suspend fun deleteTqById(questionId: String): Boolean {
-        val tq = tqCollection.findOne(TicketQuestionDto::id eq questionId)
-
-        if (tq != null) {
-            return tqCollection.deleteOne(TicketQuestionDto::id eq questionId).wasAcknowledged()
-        }
-        return false
+        tqCollection.findOne(TicketQuestionDto::id eq questionId) ?: return false
+        return tqCollection.deleteOne(TicketQuestionDto::id eq questionId).wasAcknowledged()
     }
 
     suspend fun getAllTqFromTicket(ticketId: String): TqResponse {
@@ -340,12 +340,61 @@ class HistoryDatabase {
     }
 
     /*
+        Results
+     */
+
+    suspend fun setAchieveCompletedByUser(request: AddResultRequest): Boolean {
+        userCollection.findOne(UserDto::login eq request.login) ?: return false
+        return resultCollection.insertOne(
+            ResultDto(
+                type = request.achieve.type,
+                answer = request.answer,
+                achieveId = request.achieve.id,
+                userLogin = request.login
+            )
+        ).wasAcknowledged()
+    }
+
+    suspend fun getResultsByType(login: String, type: AchieveType): ResultResponse {
+        return ResultResponse(
+            resultCollection.find(
+                ResultDto::userLogin eq login,
+                ResultDto::type eq type
+            ).toList()
+        )
+    }
+
+    suspend fun getAllResults(request: GetAllResultsRequest): ResultResponse {
+        return ResultResponse(
+            resultCollection.find(
+                ResultDto::userLogin eq request.login
+            ).toList()
+        )
+    }
+
+    suspend fun resetResultsWithType(request: ResetResultsWithTypeRequest): Boolean {
+        userCollection.findOne(UserDto::login eq request.login) ?: return false
+
+        return resultCollection.deleteMany(
+            ResultDto::userLogin eq request.login,
+            ResultDto::type eq request.type
+        )
+            .wasAcknowledged()
+    }
+
+    /*
         Achieve
      */
 
     suspend fun getAllAchieves(): AchieveResponse {
         return AchieveResponse(
-            achieveCollection.find().toList()
+            achieveList = achieveCollection.find().toList()
+        )
+    }
+
+    suspend fun getTypeAchieves(type: AchieveType): AchieveResponse {
+        return AchieveResponse(
+            achieveList = achieveCollection.find(AchieveDto::type eq type).toList()
         )
     }
 

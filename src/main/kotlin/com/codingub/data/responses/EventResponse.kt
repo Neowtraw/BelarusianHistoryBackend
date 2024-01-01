@@ -1,7 +1,7 @@
 package com.codingub.data.responses
 
-import com.codingub.data.models.Event
+import com.codingub.data.models.events.EventDto
 
 data class EventResponse(
-    val events: List<Event>
+    val events: List<EventDto>
 )

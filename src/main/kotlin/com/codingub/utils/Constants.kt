@@ -37,5 +37,10 @@ object Constants {
         const val ROUTE_DELETE_USER_GROUP = "groups/users/reset"
 
         const val ROUTE_EVENTS = "events"
+
+        const val ROUTE_RESULTS = "results"
+        const val ROUTE_INSERT_RESULTS = "results/insert"
+        const val ROUTE_DELETE_RESULTS = "results/reset"
+
     }
 }
