@@ -18,15 +18,18 @@ object Constants {
 
         const val ROUTE_TICKET = "tickets"
         const val ROUTE_INSERT_TICKET = "tickets/insert"
-        const val ROUTE_RESET_TICKET = "tickets/reset"
+        const val ROUTE_RESET_TICKET = "tickets/reset/name"
+        const val ROUTE_RESET_TICKETS = "tickets/reset/ids"
 
         const val ROUTE_TQ = "tq"
         const val ROUTE_INSERT_TQ = "tq/insert"
-        const val ROUTE_RESET_TQ = "tq/reset"
+        const val ROUTE_RESET_TQ = "tq/reset/id"
+        const val ROUTE_RESET_TQS = "tq/reset/ids"
 
         const val ROUTE_PQ = "pq"
         const val ROUTE_INSERT_PQ = "pq/insert"
-        const val ROUTE_RESET_PQ = "pq/reset"
+        const val ROUTE_RESET_PQ = "pq/reset/id"
+        const val ROUTE_RESET_PQS = "pq/reset/ids"
 
         const val ROUTE_ACHIEVE = "achieves"
 

@@ -40,6 +40,7 @@ fun Application.configureRouting(
 
         getAllTickets()
         deleteTicketByName()
+        deleteTicketsByIds()
         insertOrUpdateTicket()
 
         /*
@@ -47,6 +48,7 @@ fun Application.configureRouting(
          */
         getAllTqFromTicket()
         getAllTq()
+        deleteTqsByIds()
         deleteTqById()
         insertTq()
 
@@ -55,6 +57,7 @@ fun Application.configureRouting(
          */
         getAllPracticeFromTq()
         deletePracticeById()
+        deletePracticesByIds()
         insertPractice()
 
         /*

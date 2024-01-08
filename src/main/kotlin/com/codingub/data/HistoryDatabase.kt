@@ -17,15 +17,22 @@ import com.codingub.sdk.AccessLevel
 import com.codingub.sdk.AchieveType
 import com.codingub.utils.Constants
 import com.codingub.utils.HistoryLogger
+import com.mongodb.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.reactive.awaitFirst
+import kotlinx.coroutines.withContext
 import org.litote.kmongo.*
+import org.litote.kmongo.coroutine.abortTransactionAndAwait
+import org.litote.kmongo.coroutine.commitTransactionAndAwait
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.reactivestreams.KMongo
 
 class HistoryDatabase {
 
-    private val database = KMongo.createClient(
+    private val client = KMongo.createClient(
         connectionString = "mongodb+srv://neowtraw:${Constants.MONGO_PW}@historycluster.xg5enip.mongodb.net/${Constants.MONGO_DB_NAME}?retryWrites=true&w=majority"
-    ).coroutine
+    )
+    private val database = client.coroutine
         .getDatabase(Constants.MONGO_DB_NAME)
 
     //tables of all data
@@ -154,6 +161,48 @@ class HistoryDatabase {
         }
     }
 
+    //                    val deletedResults = ids.map { id ->
+//                        ticketCollection.findOneAndDelete(TicketDto::id eq id)?.let { deletedTicket ->
+//                            tqCollection.find(TicketQuestionDto::ticketId eq id).toList().forEach { tq ->
+//                                pqCollection.deleteMany(PracticeQuestionDto::tqId eq tq.id)
+//                            }
+//                            tqCollection.deleteMany(TicketQuestionDto::ticketId eq id)
+//                            true
+//                        } ?: false
+    suspend fun deleteTicketsByIds(ids: List<String>): Boolean {
+        val txnOptions: TransactionOptions = TransactionOptions.builder()
+            .readPreference(ReadPreference.primary())
+            .writeConcern(WriteConcern.MAJORITY)
+            .build()
+
+        client.startSession().awaitFirst().use { session ->
+            session.startTransaction(txnOptions)
+
+            try {
+                ids.forEach { id ->
+                    with(ticketCollection) {
+                        findOne(TicketDto::id eq id) ?: return false
+
+                        tqCollection.find(TicketQuestionDto::ticketId eq id).toList().let { tq ->
+                            tq.map { it.id }.forEach { tqId ->
+                                pqCollection.deleteMany(PracticeQuestionDto::tqId eq tqId)
+                            }
+                        }
+
+                        tqCollection.deleteMany(TicketQuestionDto::ticketId eq id)
+                        deleteOne(TicketDto::id eq id).wasAcknowledged()
+                    }
+                }
+                return true
+            } catch (e: MongoCommandException) {
+                session.abortTransactionAndAwait()
+                return false
+            } finally {
+                session.close()
+            }
+        }
+    }
+
     suspend fun getAllTickets(): TicketResponse {
         val tickets = ticketCollection.find().toList()
         val ticketMap = tickets.associate { ticket ->
@@ -244,6 +293,32 @@ class HistoryDatabase {
         return tqCollection.deleteOne(TicketQuestionDto::id eq questionId).wasAcknowledged()
     }
 
+    suspend fun deleteTqsByIds(ids: List<String>): Boolean {
+        val txnOptions: TransactionOptions = TransactionOptions.builder()
+            .readPreference(ReadPreference.primary())
+            .writeConcern(WriteConcern.MAJORITY)
+            .build()
+
+        client.startSession().awaitFirst().use { session ->
+            session.startTransaction(txnOptions)
+            try {
+                ids.forEach { id ->
+                    with(tqCollection) {
+                        findOne(TicketQuestionDto::id eq id) ?: return false
+                        pqCollection.deleteMany(PracticeQuestionDto::tqId eq id)
+                        if (!deleteOne(TicketQuestionDto::id eq id).wasAcknowledged()) return false
+                    }
+                }
+                return true
+            } catch (e: MongoCommandException) {
+                session.abortTransactionAndAwait()
+                return false
+            } finally {
+                session.close()
+            }
+        }
+    }
+
     suspend fun getAllTqFromTicket(ticketId: String): TqResponse {
         val tqs = tqCollection.find(TicketQuestionDto::ticketId eq ticketId).toList()
 
@@ -324,6 +399,18 @@ class HistoryDatabase {
                 .wasAcknowledged()
         }
         return false
+    }
+
+    suspend fun deletePracticesByIds(ids: List<String>): Boolean {
+        ids.forEach { id ->
+
+            with(pqCollection) {
+                findOne(PracticeQuestionDto::id eq id)?.let {
+                    if (!deleteOne(PracticeQuestionDto::id eq id).wasAcknowledged()) return false
+                } ?: return false
+            }
+        }
+        return true
     }
 
     suspend fun getAllPracticeFromTq(tqId: String): PqResponse {

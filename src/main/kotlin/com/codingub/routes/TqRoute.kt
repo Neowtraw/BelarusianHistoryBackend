@@ -3,8 +3,10 @@ package com.codingub.routes
 import com.codingub.data.repositories.TqDataRepository
 import com.codingub.data.requests.InsertTqRequest
 import com.codingub.data.requests.DeleteTqRequest
+import com.codingub.data.requests.DeleteTqsRequest
 import com.codingub.utils.Constants.EndPoints.ROUTE_INSERT_TQ
 import com.codingub.utils.Constants.EndPoints.ROUTE_RESET_TQ
+import com.codingub.utils.Constants.EndPoints.ROUTE_RESET_TQS
 import com.codingub.utils.Constants.EndPoints.ROUTE_TQ
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -21,7 +23,7 @@ fun Route.insertTq() {
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
-        val wasAcknowledged = tqDataSource.insertTq(question = request)
+        val wasAcknowledged = tqDataSource.insertTq(request = request)
         if(!wasAcknowledged){
             call.respond(HttpStatusCode.Conflict, "tq not found")
         }
@@ -43,6 +45,21 @@ fun Route.deleteTqById() {
         call.respond(HttpStatusCode.OK, "tq deleted successfully")
     }
 }
+
+fun Route.deleteTqsByIds() {
+    post(ROUTE_RESET_TQS) {
+        val request = kotlin.runCatching { call.receiveNullable<DeleteTqsRequest>() }.getOrNull() ?: kotlin.run {
+            call.respond(HttpStatusCode.BadRequest)
+            return@post
+        }
+        val wasAcknowledged = tqDataSource.deleteTqsByIds(request)
+        if(!wasAcknowledged){
+            call.respond(HttpStatusCode.Conflict, "tqs not found")
+        }
+        call.respond(HttpStatusCode.OK, "tqs deleted successfully")
+    }
+}
+
 fun Route.getAllTqFromTicket() {
     get("$ROUTE_TQ/") {
         val request = kotlin.runCatching {  call.request.queryParameters["id"] }.getOrNull() ?: kotlin.run {

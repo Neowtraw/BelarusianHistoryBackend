@@ -2,10 +2,12 @@ package com.codingub.routes
 
 import com.codingub.data.repositories.PqDataRepository
 import com.codingub.data.requests.DeletePqRequest
+import com.codingub.data.requests.DeletePqsRequest
 import com.codingub.data.requests.InsertPqRequest
 import com.codingub.utils.Constants.EndPoints.ROUTE_INSERT_PQ
 import com.codingub.utils.Constants.EndPoints.ROUTE_PQ
 import com.codingub.utils.Constants.EndPoints.ROUTE_RESET_PQ
+import com.codingub.utils.Constants.EndPoints.ROUTE_RESET_PQS
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -47,6 +49,23 @@ fun Route.deletePracticeById(){
 
         }
         call.respond(HttpStatusCode.OK, "Practice deleted successfully")
+        return@post
+    }
+}
+
+fun Route.deletePracticesByIds() {
+    post(ROUTE_RESET_PQS) {
+        val request = kotlin.runCatching { call.receiveNullable<DeletePqsRequest>() }.getOrNull() ?: kotlin.run {
+            call.respond(HttpStatusCode.BadRequest)
+            return@post
+        }
+        val wasAcknowledged = pqDataSource.deletePracticesByIds(request)
+        if(!wasAcknowledged){
+            call.respond(HttpStatusCode.Conflict, "Practices not found")
+            return@post
+
+        }
+        call.respond(HttpStatusCode.OK, "Practices deleted successfully")
         return@post
     }
 }

@@ -8,6 +8,10 @@ data class DeletePqRequest (
     val questionId: String
 )
 
+data class DeletePqsRequest(
+    val ids: List<String>
+)
+
 @Serializable
 data class InsertPqRequest(
     val taskType: TaskType,

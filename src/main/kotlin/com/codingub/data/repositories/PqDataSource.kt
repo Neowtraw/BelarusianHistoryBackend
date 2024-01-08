@@ -1,6 +1,7 @@
 package com.codingub.data.repositories
 
 import com.codingub.data.HistoryDatabase
+import com.codingub.data.requests.DeletePqsRequest
 import com.codingub.data.requests.InsertPqRequest
 import com.codingub.data.responses.PqResponse
 
@@ -10,6 +11,7 @@ interface PqDataRepository{
      */
     suspend fun insertPractice(question: InsertPqRequest) : Boolean
     suspend fun deletePracticeById(questionId: String) : Boolean
+    suspend fun deletePracticesByIds(request: DeletePqsRequest): Boolean
 
     /*
         User
@@ -18,7 +20,7 @@ interface PqDataRepository{
 
 }
 
-class PqDataRepositoryImpl constructor(
+class PqDataRepositoryImpl (
     private val database: HistoryDatabase
 ) : PqDataRepository{
 
@@ -28,6 +30,10 @@ class PqDataRepositoryImpl constructor(
 
     override suspend fun deletePracticeById(questionId: String): Boolean {
         return database.deletePracticeById(questionId)
+    }
+
+    override suspend fun deletePracticesByIds(request: DeletePqsRequest): Boolean {
+        return database.deletePracticesByIds(request.ids)
     }
 
     override suspend fun getAllPracticeFromTq(tqId: String): PqResponse {
