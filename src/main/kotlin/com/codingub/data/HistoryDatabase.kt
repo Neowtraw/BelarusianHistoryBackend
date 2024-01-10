@@ -18,12 +18,9 @@ import com.codingub.sdk.AchieveType
 import com.codingub.utils.Constants
 import com.codingub.utils.HistoryLogger
 import com.mongodb.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.reactive.awaitFirst
-import kotlinx.coroutines.withContext
 import org.litote.kmongo.*
 import org.litote.kmongo.coroutine.abortTransactionAndAwait
-import org.litote.kmongo.coroutine.commitTransactionAndAwait
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.reactivestreams.KMongo
 
@@ -152,16 +149,18 @@ class HistoryDatabase {
      */
 
     suspend fun deleteTicketByName(name: String): Boolean {
-        val ticket = ticketCollection.findOne(TicketDto::name eq name)
-        return if (ticket != null) {
-            ticketCollection.deleteOne(TicketDto::name eq name).wasAcknowledged()
-        } else {
-            HistoryLogger.info("Ticket not found")
-            false
-        }
+//        val ticket = ticketCollection.findOne(TicketDto::name eq name)
+//        val achieve = achieveCollection.findOne()
+//        return if (ticket != null) {
+//
+//            ticketCollection.deleteOne(TicketDto::name eq name).wasAcknowledged()
+//        } else {
+//            HistoryLogger.info("Ticket not found")
+        return false
+        //    }
     }
 
-    //                    val deletedResults = ids.map { id ->
+    //                        val deletedResults = ids.map { id ->
 //                        ticketCollection.findOneAndDelete(TicketDto::id eq id)?.let { deletedTicket ->
 //                            tqCollection.find(TicketQuestionDto::ticketId eq id).toList().forEach { tq ->
 //                                pqCollection.deleteMany(PracticeQuestionDto::tqId eq tq.id)
@@ -182,14 +181,7 @@ class HistoryDatabase {
                 ids.forEach { id ->
                     with(ticketCollection) {
                         findOne(TicketDto::id eq id) ?: return false
-
-                        tqCollection.find(TicketQuestionDto::ticketId eq id).toList().let { tq ->
-                            tq.map { it.id }.forEach { tqId ->
-                                pqCollection.deleteMany(PracticeQuestionDto::tqId eq tqId)
-                            }
-                        }
-
-                        tqCollection.deleteMany(TicketQuestionDto::ticketId eq id)
+                        deleteDataFromTicket(id)
                         deleteOne(TicketDto::id eq id).wasAcknowledged()
                     }
                 }
@@ -206,6 +198,8 @@ class HistoryDatabase {
     suspend fun getAllTickets(): TicketResponse {
         val tickets = ticketCollection.find().toList()
         val ticketMap = tickets.associate { ticket ->
+            val achievement = achieveCollection.findOne(AchieveDto::ownerId eq ticket.id)
+
             val tqs = tqCollection.find(TicketQuestionDto::ticketId eq ticket.id).toList().map { tq ->
                 val practices = pqCollection.find(PracticeQuestionDto::tqId eq tq.id).toList().map { practice ->
                     PracticeQuestion(
@@ -216,20 +210,23 @@ class HistoryDatabase {
                         answers = practice.answers
                     )
                 }
+                val achieve = achieveCollection.findOne(AchieveDto::ownerId eq ticket.id)
 
                 TicketQuestion(
                     id = tq.id,
                     name = tq.name,
                     info = tq.info,
                     practices = practices,
-                    achieve = tq.achieve
+                    achieve = achieve
                 )
             }
-            ticket.id to Ticket(ticket.id, ticket.name, ticket.timer, tqs, ticket.achievement)
+            ticket.id to Ticket(ticket.id, ticket.name, ticket.timer, tqs, achievement)
         }
 
         val ticketList = tickets.map { ticket ->
-            ticketMap[ticket.id] ?: Ticket(ticket.id, ticket.name, ticket.timer, emptyList(), ticket.achievement)
+            val achievement = achieveCollection.findOne(AchieveDto::ownerId eq ticket.id)
+
+            ticketMap[ticket.id] ?: Ticket(ticket.id, ticket.name, ticket.timer, emptyList(), achievement)
         }
 
         return TicketResponse(ticketList)
@@ -238,11 +235,17 @@ class HistoryDatabase {
     suspend fun insertOrUpdateTicket(request: InsertTicketRequest): Boolean {
         val ticket = ticketCollection.findOne(TicketDto::name eq request.name)
 
+        if (request.achieve != null) {
+            val achieve = achieveCollection.findOne(AchieveDto::ownerId eq ticket?.id)
+            if (achieve != null)
+                achieveCollection.replaceOne(AchieveDto::id eq request.achieve.id, request.achieve)
+            else achieveCollection.insertOne(request.achieve)
+        }
+
         if (ticket != null) {
             val updatedTicket = ticket.copy(
                 name = request.name,
-                timer = request.timer,
-                achievement = request.achieve
+                timer = request.timer
             )
             if (ticket != updatedTicket)
                 return ticketCollection.updateOne(
@@ -252,8 +255,7 @@ class HistoryDatabase {
         } else {
             val insertedTicket = TicketDto(
                 name = request.name,
-                timer = request.timer,
-                achievement = request.achieve
+                timer = request.timer
             )
             return ticketCollection.insertOne(insertedTicket).wasAcknowledged()
         }
@@ -266,12 +268,18 @@ class HistoryDatabase {
     suspend fun insertOrUpdateTq(question: InsertTqRequest): Boolean {
         val tq = tqCollection.findOne(TicketQuestionDto::name eq question.name)
 
+        if (question.achieve != null) {
+            val achieve = achieveCollection.findOne(AchieveDto::ownerId eq tq?.id)
+            if (achieve != null)
+                achieveCollection.replaceOne(AchieveDto::id eq question.achieve.id, question.achieve)
+            else achieveCollection.insertOne(question.achieve)
+        }
+
         if (tq != null) {
             val updatedTq =
                 tq.copy(
                     name = question.name,
-                    info = question.info,
-                    achieve = question.achieve
+                    info = question.info
                 )
             return tqCollection.replaceOne(
                 TicketQuestionDto::id eq tq.id, updatedTq
@@ -281,7 +289,6 @@ class HistoryDatabase {
         val insertedTq = TicketQuestionDto(
             name = question.name,
             info = question.info,
-            achieve = question.achieve,
             ticketId = question.ticketId
         )
 
@@ -303,11 +310,10 @@ class HistoryDatabase {
             session.startTransaction(txnOptions)
             try {
                 ids.forEach { id ->
-                    with(tqCollection) {
-                        findOne(TicketQuestionDto::id eq id) ?: return false
-                        pqCollection.deleteMany(PracticeQuestionDto::tqId eq id)
-                        if (!deleteOne(TicketQuestionDto::id eq id).wasAcknowledged()) return false
-                    }
+                    achieveCollection.findOneAndDelete(AchieveDto::ownerId eq id) ?: return false
+                    tqCollection.findOne(TicketQuestionDto::id eq id) ?: return false
+                    pqCollection.deleteMany(PracticeQuestionDto::tqId eq id)
+                    if (!tqCollection.deleteOne(TicketQuestionDto::id eq id).wasAcknowledged()) return false
                 }
                 return true
             } catch (e: MongoCommandException) {
@@ -323,6 +329,7 @@ class HistoryDatabase {
         val tqs = tqCollection.find(TicketQuestionDto::ticketId eq ticketId).toList()
 
         val ticketQuestionList = tqs.map { tq ->
+            val achieve = achieveCollection.findOne(AchieveDto::ownerId eq tq.id)
             val practices = pqCollection.find(PracticeQuestionDto::tqId eq tq.id).toList()
                 .map { practice ->
                     PracticeQuestion(
@@ -333,7 +340,7 @@ class HistoryDatabase {
                         answers = practice.answers
                     )
                 }
-            TicketQuestion(tq.id, tq.name, tq.info, practices, tq.achieve)
+            TicketQuestion(tq.id, tq.name, tq.info, practices, achieve)
         }
 
         return TqResponse(ticketQuestionList)
@@ -347,6 +354,7 @@ class HistoryDatabase {
         val tqs = tqCollection.find(TicketQuestionDto::id `in` tqIdList).toList()
 
         val ticketQuestionList = tqs.map { tq ->
+            val achieve = achieveCollection.findOne(AchieveDto::ownerId eq tq.id)
             val practices = pqList.filter { it.tqId == tq.id }.map { practice ->
                 PracticeQuestion(
                     taskType = practice.taskType,
@@ -356,7 +364,7 @@ class HistoryDatabase {
                     answers = practice.answers
                 )
             }
-            TicketQuestion(tq.id, tq.name, tq.info, practices, tq.achieve)
+            TicketQuestion(tq.id, tq.name, tq.info, practices, achieve)
         }
         return TqResponse(ticketQuestionList)
     }
@@ -493,5 +501,20 @@ class HistoryDatabase {
         return EventResponse(
             eventCollection.find().toList()
         )
+    }
+
+    /*
+        Additional
+     */
+
+
+    private suspend fun deleteDataFromTicket(ticketId: String) {
+        achieveCollection.findOneAndDelete(AchieveDto::ownerId eq ticketId)
+        tqCollection.find(TicketQuestionDto::ticketId eq ticketId).toList().let { tq ->
+            tq.map { it.id }.forEach { tqId ->
+                pqCollection.deleteMany(PracticeQuestionDto::tqId eq tqId)
+            }
+        }
+        tqCollection.deleteMany(TicketQuestionDto::ticketId eq ticketId)
     }
 }

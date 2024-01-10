@@ -8,6 +8,5 @@ data class TicketQuestionDto(
     @BsonId val id : String = ObjectId().toString(),
     val name: String,
     val info: String,
-    val ticketId: String,
-    val achieve: AchieveDto? = null
+    val ticketId: String
 )

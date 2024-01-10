@@ -8,5 +8,6 @@ data class AchieveDto(
     @BsonId val id : String = ObjectId().toString(),
     val name : String,
     val info : String,
-    val type: AchieveType
+    val type: AchieveType,
+    val ownerId: String
 )

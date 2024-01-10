@@ -7,6 +7,5 @@ import org.bson.types.ObjectId
 data class TicketDto(
     @BsonId val id: String = ObjectId().toString(),
     val name: String,
-    val timer: Long, //for timer in ticket
-    val achievement: AchieveDto? = null
+    val timer: Long //for timer in ticket
 )
