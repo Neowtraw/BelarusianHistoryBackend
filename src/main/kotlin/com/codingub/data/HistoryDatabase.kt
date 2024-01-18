@@ -9,19 +9,30 @@ import com.codingub.data.models.users.UserDto
 import com.codingub.data.requests.*
 import com.codingub.data.responses.*
 import com.codingub.data.models.events.EventDto
+import com.codingub.data.models.map.MapDto
+import com.codingub.data.models.map.MapLabelDto
+import com.codingub.data.models.map.MapPeriodDto
+import com.codingub.data.models.map.MapTypeDto
 import com.codingub.data.models.users.ResultDto
 import com.codingub.data.responses.models.PracticeQuestion
 import com.codingub.data.responses.models.Ticket
 import com.codingub.data.responses.models.TicketQuestion
+import com.codingub.data.responses.models.map.Map
+import com.codingub.data.responses.models.map.MapLabel
+import com.codingub.data.responses.models.map.MapType
 import com.codingub.sdk.AccessLevel
 import com.codingub.sdk.AchieveType
+import com.codingub.sdk.MapCategory
 import com.codingub.utils.Constants
 import com.codingub.utils.HistoryLogger
 import com.mongodb.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.reactive.awaitFirst
+import kotlinx.coroutines.withContext
 import org.litote.kmongo.*
 import org.litote.kmongo.coroutine.abortTransactionAndAwait
 import org.litote.kmongo.coroutine.coroutine
+import org.litote.kmongo.coroutine.insertOne
 import org.litote.kmongo.reactivestreams.KMongo
 
 class HistoryDatabase {
@@ -41,6 +52,11 @@ class HistoryDatabase {
     private val groupCollection = database.getCollection<GroupDto>()
     private val eventCollection = database.getCollection<EventDto>()
     private val resultCollection = database.getCollection<ResultDto>()
+
+    private val mapCollection = database.getCollection<MapDto>()
+    private val mapTypeCollection = database.getCollection<MapTypeDto>()
+    private val mapLabelCollection = database.getCollection<MapLabelDto>()
+    private val mapPeriodCollection = database.getCollection<MapPeriodDto>()
 
     /*
         User
@@ -504,9 +520,59 @@ class HistoryDatabase {
     }
 
     /*
+        Map
+     */
+
+    suspend fun updateLabelOnMap(label: LabelRequest): Boolean {
+        mapCollection.findOne(MapDto::id eq label.label.mapId) ?: return false
+        return mapLabelCollection.updateOne(MapLabelDto::id eq label.label.id, label.label.toMapLabelDto())
+            .wasAcknowledged()
+    }
+
+    suspend fun addLabelOnMap(label: LabelRequest): Boolean {
+        mapCollection.findOne(MapDto::id eq label.label.mapId) ?: return false
+        return mapLabelCollection.insertOne(label.label.toMapLabelDto()).wasAcknowledged()
+    }
+
+    suspend fun deleteLabelFromMap(id: String): Boolean =
+        mapLabelCollection.deleteOne(MapLabelDto::id eq id).wasAcknowledged()
+
+
+    suspend fun getMap(periodId: String): Map {
+        val map = mapCollection.findOne(MapDto::periodId eq periodId)!!
+        val labels = mapLabelCollection.find(MapLabelDto::mapId eq map.id).toList()
+
+        return Map(
+            id = map.id,
+            map = map.map,
+            labels = labels.map { it.toMapLabel() },
+            periodId = map.periodId
+        )
+    }
+
+    suspend fun getMapTypes(): List<MapType> {
+        val types = mutableListOf<MapType>()
+        MapCategory.entries.forEach { type ->
+            types.add(getMapType(type))
+        }
+        return types.toList()
+    }
+    /*
         Additional
      */
 
+    private suspend fun getMapType(type: MapCategory): MapType {
+        val mapType = mapTypeCollection.findOne(MapTypeDto::type eq type)!!
+        val periods = mapPeriodCollection.find(MapPeriodDto::mapTypeId eq mapType.id).toList()
+
+        return MapType(
+            id = mapType.id,
+            title = mapType.title,
+            description = mapType.description,
+            type = mapType.type,
+            periods = periods.map { it.toMapPeriod() }
+        )
+    }
 
     private suspend fun deleteDataFromTicket(ticketId: String) {
         achieveCollection.findOneAndDelete(AchieveDto::ownerId eq ticketId)

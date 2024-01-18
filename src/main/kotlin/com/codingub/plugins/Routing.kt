@@ -78,5 +78,14 @@ fun Application.configureRouting(
             Event
          */
         getAllEvents()
+
+        /*
+            Map
+         */
+        addLabelOnMap()
+        updateLabelOnMap()
+        getMap()
+        getMapTypes()
+        deleteLabelFromMap()
     }
 }

@@ -20,6 +20,7 @@ val koinModule = module {
     single { provideAchieveDataRepository(get() as HistoryDatabase) }
     single { provideGroupDataRepository(get() as HistoryDatabase)}
     single { provideEventDataRepository(get() as HistoryDatabase)}
+    single { provideMapDataRepository(get() as HistoryDatabase)}
 
 }
 
@@ -60,3 +61,6 @@ internal fun provideAchieveDataRepository(
 internal fun provideGroupDataRepository(
     database: HistoryDatabase
 ) : GroupDataRepository = GroupDataRepositoryImpl(database)
+internal fun provideMapDataRepository(
+    database: HistoryDatabase
+) : MapRepository = MapRepositoryImpl(database)

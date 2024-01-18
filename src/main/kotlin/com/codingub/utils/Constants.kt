@@ -45,5 +45,11 @@ object Constants {
         const val ROUTE_INSERT_RESULTS = "results/insert"
         const val ROUTE_DELETE_RESULTS = "results/reset"
 
+        const val ROUTE_MAP_TYPE = "maptype"
+        const val ROUTE_MAP = "maptype/period/map"
+        const val ROUTE_DELETE_MAP = "maptype/period/map/delete"
+        const val ROUTE_ADD_LABEL = "maptype/period/map/label/add"
+        const val ROUTE_UPDATE_LABEL = "maptype/period/map/label/update"
+
     }
 }
